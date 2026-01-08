@@ -17,7 +17,6 @@ window.addEventListener('resize', () => {
     canvas.height = height;
 });
 
-// --- STATS CONFIG ---
 const COST_DAMAGE = 100;
 const COST_SCOPE = 50;
 const COST_TURRET = 100;
@@ -35,11 +34,10 @@ const defaultStats = {
 let savedData = Storage.load();
 let player = savedData ? savedData : JSON.parse(JSON.stringify(defaultStats));
 
-// Session State (Resets every game)
 let state = {
     gold: 0,
     towerHp: 100,
-    playerHp: 100, // New HP Bar
+    playerHp: 100,
     wave: 1,
     waveActive: true,
     shopOpen: false,
@@ -49,21 +47,20 @@ let state = {
     particles: [],
     dirIndex: 0, 
     directions: ['N', 'E', 'S', 'W'],
-    turrets: { 'N': false, 'E': false, 'S': false, 'W': false }, // Turrets per wall
+    turrets: { 'N': false, 'E': false, 'S': false, 'W': false },
     turretTimer: 0,
     gameOver: false
 };
 
 const input = new InputHandler(canvas);
 
-// --- NAVIGATION & INPUT ---
 document.getElementById('nav-left').addEventListener('click', () => turn(-1));
 document.getElementById('nav-right').addEventListener('click', () => turn(1));
 document.getElementById('nav-down').addEventListener('click', () => turn(2));
 canvas.addEventListener('mousedown', shoot);
 canvas.addEventListener('touchend', shoot);
 
-// Global window functions for HTML buttons
+// --- SHOP LOGIC ---
 window.buyUpgrade = (type) => {
     if (type === 'damage') {
         if (player.xp >= COST_DAMAGE) {
@@ -84,15 +81,33 @@ window.buyUpgrade = (type) => {
 
 window.buyTurret = () => {
     let currentDir = state.directions[state.dirIndex];
-    if (state.turrets[currentDir]) return; // Already have one
+    if (state.turrets[currentDir]) return; 
     
     if (state.gold >= COST_TURRET) {
         state.gold -= COST_TURRET;
         state.turrets[currentDir] = true;
         updateUI();
         updateNavLabels();
+        updateShopButtons(); // Refresh button text
     }
 };
+
+function updateShopButtons() {
+    // Check if current view has a turret and update button text
+    let currentDir = state.directions[state.dirIndex];
+    const btn = document.getElementById('btn-turret');
+    if (state.turrets[currentDir]) {
+        btn.innerText = "OWNED";
+        btn.disabled = true;
+        btn.style.color = "#888";
+        btn.style.borderColor = "#888";
+    } else {
+        btn.innerText = `${COST_TURRET} G`;
+        btn.disabled = false;
+        btn.style.color = "#0f0";
+        btn.style.borderColor = "#0f0";
+    }
+}
 
 window.nextWave = () => {
     document.getElementById('shop-overlay').style.display = 'none';
@@ -103,48 +118,45 @@ window.nextWave = () => {
 function turn(dirChange) {
     state.dirIndex = (state.dirIndex + dirChange + 4) % 4;
     updateNavLabels();
+    if (state.shopOpen) updateShopButtons(); // Update shop button if we turn while shopping
     ctx.fillStyle = "#000";
     ctx.fillRect(0,0,width,height);
 }
 
 function updateNavLabels() {
     let cur = state.directions[state.dirIndex];
-    document.getElementById('current-dir').innerHTML = cur + (state.turrets[cur] ? " 🤖" : "");
+    document.getElementById('current-dir').innerHTML = cur + (state.turrets[cur] ? " <span style='font-size:20px'>🤖</span>" : "");
     
     const leftIndex = (state.dirIndex + 3) % 4;
     const rightIndex = (state.dirIndex + 1) % 4;
     const backIndex = (state.dirIndex + 2) % 4;
     
-    document.getElementById('nav-left').innerText = state.directions[leftIndex] + (state.turrets[state.directions[leftIndex]] ? "🤖" : "");
-    document.getElementById('nav-right').innerText = state.directions[rightIndex] + (state.turrets[state.directions[rightIndex]] ? "🤖" : "");
-    document.getElementById('nav-down').innerText = state.directions[backIndex] + (state.turrets[state.directions[backIndex]] ? "🤖" : "");
+    // Helper to get emoji
+    const getIcon = (dir) => state.turrets[dir] ? "🤖" : "";
+
+    document.getElementById('nav-left').innerText = state.directions[leftIndex] + getIcon(state.directions[leftIndex]);
+    document.getElementById('nav-right').innerText = state.directions[rightIndex] + getIcon(state.directions[rightIndex]);
+    document.getElementById('nav-down').innerText = state.directions[backIndex] + getIcon(state.directions[backIndex]);
 }
 
 function shoot(e) {
     if (state.gameOver || !state.waveActive || state.shopOpen) return;
     const aim = input.getAim();
-    
-    // Muzzle Flash
     ctx.fillStyle = "rgba(255, 255, 220, 0.3)";
     ctx.fillRect(0, 0, width, height);
-
     checkHit(aim.x, aim.y, player.stats.damage, true);
 }
 
-// Unified hit logic for Player and Turrets
 function checkHit(x, y, dmg, isPlayer) {
     for (let i = state.enemies.length - 1; i >= 0; i--) {
         let e = state.enemies[i];
         
-        // Player can only hit current view. Turrets hit their own view.
-        // But for click shooting, we only check current view.
         if (isPlayer && e.view !== state.directions[state.dirIndex]) continue;
 
         let scale = (100 - e.distance) / 10;
         let drawY = e.y + ((100 - e.distance) * (height/300));
         let size = 30 * scale; 
         
-        // If turret, we skip aim check and just hit closest
         let hit = false;
         if (isPlayer) {
             let dist = Math.hypot(e.x - x, drawY - y);
@@ -172,19 +184,16 @@ function checkHit(x, y, dmg, isPlayer) {
                 updateUI();
                 saveGame();
             }
-            break; // One shot one kill
+            break; 
         }
     }
 }
 
 function fireTurrets() {
-    // Check every direction
     state.directions.forEach(dir => {
         if (state.turrets[dir]) {
-            // Find closest enemy in this direction
             let target = null;
             let maxDist = 0;
-            
             state.enemies.forEach(e => {
                 if (e.view === dir && e.distance > maxDist) {
                     target = e;
@@ -193,9 +202,8 @@ function fireTurrets() {
             });
 
             if (target) {
-                target.hp -= 1; // Turret damage fixed at 1 for now
+                target.hp -= 1; 
                 if (target.hp <= 0) {
-                     // Kill logic duplicated for simplicity (should refactor later)
                      state.enemies = state.enemies.filter(e => e !== target);
                      player.xp += 5;
                      state.gold += 5;
@@ -219,11 +227,9 @@ function startNextWave() {
 function openShop() {
     state.shopOpen = true;
     document.getElementById('shop-overlay').style.display = 'flex';
-    
-    // Update Shop Buttons
     document.getElementById('btn-damage').innerText = `${COST_DAMAGE} XP`;
     document.getElementById('btn-scope').innerText = `${COST_SCOPE} XP`;
-    document.getElementById('btn-turret').innerText = `${COST_TURRET} G`;
+    updateShopButtons(); // Check if we already own the turret for this view
 }
 
 function updateUI() {
@@ -247,6 +253,33 @@ function spawnFloatingText(text, x, y, color) {
     state.particles.push({ text, x, y, life: 1.0, color });
 }
 
+// --- INDICATORS (Restored to CSS Bars) ---
+function checkIndicators() {
+    let closestL = 0; 
+    let closestR = 0;
+    let closestB = 0;
+
+    state.enemies.forEach(e => {
+        let enemyViewIndex = state.directions.indexOf(e.view);
+        let diff = enemyViewIndex - state.dirIndex;
+        if (diff === -3) diff = 1; 
+        if (diff === 3) diff = -1; 
+        
+        let danger = 0;
+        if (e.distance < 70) {
+            danger = 1 - (e.distance / 70);
+        }
+
+        if (diff === 1) closestR = Math.max(closestR, danger);
+        else if (diff === -1) closestL = Math.max(closestL, danger);
+        else if (Math.abs(diff) === 2) closestB = Math.max(closestB, danger);
+    });
+
+    document.getElementById('danger-left').style.opacity = closestL;
+    document.getElementById('danger-right').style.opacity = closestR;
+    document.getElementById('danger-behind').style.opacity = closestB;
+}
+
 // --- MAIN LOOP ---
 
 let lastTime = 0;
@@ -259,7 +292,7 @@ function gameLoop(timestamp) {
 
     if (state.shopOpen) {
         requestAnimationFrame(gameLoop);
-        return; // Pause game loop while shop is open
+        return; 
     }
 
     // Background
@@ -275,16 +308,13 @@ function gameLoop(timestamp) {
         return;
     }
 
-    // Horizon
     ctx.strokeStyle = '#222';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(0, height/2); ctx.lineTo(width, height/2);
     ctx.stroke();
 
-    // Game Logic
     if (state.waveActive) {
-        // Spawning
         if (state.enemiesSpawned < state.enemiesToSpawn) {
             spawnTimer += dt;
             if (spawnTimer > spawnRate) {
@@ -296,10 +326,9 @@ function gameLoop(timestamp) {
             }
         } else if (state.enemies.length === 0) {
             state.waveActive = false;
-            openShop(); // Trigger Shop at end of wave
+            openShop();
         }
         
-        // Turrets Fire (Every 1000ms approx)
         state.turretTimer += dt;
         if (state.turretTimer > 1000) {
             fireTurrets();
@@ -307,25 +336,25 @@ function gameLoop(timestamp) {
         }
     }
 
-    // Enemy Updates
     state.enemies.sort((a, b) => b.distance - a.distance);
     
     for (let i = state.enemies.length - 1; i >= 0; i--) {
         let e = state.enemies[i];
         e.update();
         
-        // HIT PLAYER / TOWER
+        // --- HIT LOGIC FIX ---
         if (e.distance <= 0) {
             let enemyDir = e.view;
             let currentDir = state.directions[state.dirIndex];
 
-            // MECHANIC: If facing enemy, Tower takes hit. If NOT facing, Player takes hit.
-            if (enemyDir === currentDir) {
-                state.towerHp -= 10;
-                spawnFloatingText("-10 TOWER", width/2, height/2, "red");
-            } else {
-                state.playerHp -= 20; // Hurts more to be backstabbed
-                spawnFloatingText("-20 HP", width/2, height/2 + 30, "red");
+            // TOWER ALWAYS TAKES DAMAGE
+            state.towerHp -= 10;
+            spawnFloatingText("-10 TOWER", width/2, height/2 - 20, "orange");
+
+            // IF BACKSTABBED, PLAYER ALSO TAKES DAMAGE
+            if (enemyDir !== currentDir) {
+                state.playerHp -= 10; 
+                spawnFloatingText("-10 HP", width/2, height/2 + 30, "red");
             }
 
             state.enemies.splice(i, 1);
@@ -334,13 +363,11 @@ function gameLoop(timestamp) {
             if (state.towerHp <= 0 || state.playerHp <= 0) state.gameOver = true;
         }
 
-        // Draw only if visible
         if (e.view === state.directions[state.dirIndex]) {
             e.draw(ctx, width, height);
         }
     }
     
-    // Draw Particles
     for (let i = state.particles.length - 1; i >= 0; i--) {
         let p = state.particles[i];
         p.life -= 0.02;
@@ -353,65 +380,9 @@ function gameLoop(timestamp) {
         if (p.life <= 0) state.particles.splice(i, 1);
     }
 
-    // --- CURVED INDICATORS ---
-    drawIndicators();
+    checkIndicators();
 
-    // --- SCOPE ---
-    drawScope();
-
-    requestAnimationFrame(gameLoop);
-}
-
-function drawIndicators() {
-    let closestL = 0; 
-    let closestR = 0;
-    let closestB = 0;
-
-    state.enemies.forEach(e => {
-        if (e.distance > 80) return; // Only show when closer
-        
-        let enemyViewIndex = state.directions.indexOf(e.view);
-        let diff = enemyViewIndex - state.dirIndex;
-        if (diff === -3) diff = 1; 
-        if (diff === 3) diff = -1; 
-        
-        let intensity = 1 - (e.distance / 80); // 0 to 1
-
-        if (diff === 1) closestR = Math.max(closestR, intensity);
-        else if (diff === -1) closestL = Math.max(closestL, intensity);
-        else if (Math.abs(diff) === 2) closestB = Math.max(closestB, intensity);
-    });
-
-    // Draw Curved Gradients
-    const cx = width / 2;
-    const cy = height / 2;
-    const radius = Math.min(width, height) * 0.45; // Just inside edge
-
-    if (closestL > 0) drawArcIndicator(cx, cy, radius, Math.PI * 0.75, Math.PI * 1.25, closestL);
-    if (closestR > 0) drawArcIndicator(cx, cy, radius, Math.PI * 1.75, Math.PI * 2.25, closestR); // Wrap 0
-    // Back indicator is a bar at bottom
-    if (closestB > 0) {
-        ctx.fillStyle = `rgba(255, 0, 0, ${closestB * 0.8})`;
-        ctx.fillRect(0, height - 20, width, 20);
-    }
-}
-
-function drawArcIndicator(x, y, r, startAngle, endAngle, intensity) {
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(x, y, r, startAngle, endAngle);
-    ctx.lineWidth = 15;
-    
-    // Create Gradient stroke
-    let grad = ctx.createLinearGradient(0, 0, width, 0); // Simple linear for now, radial is complex
-    // Actually, just solid color with opacity looks cleaner for "Neon" look
-    ctx.strokeStyle = `rgba(255, 0, 0, ${intensity})`;
-    ctx.lineCap = "round";
-    ctx.stroke();
-    ctx.restore();
-}
-
-function drawScope() {
+    // Scope
     const aim = input.getAim();
     let scopeRadius = (height * 0.22) * player.stats.scopeSize; 
     
@@ -443,6 +414,8 @@ function drawScope() {
     ctx.moveTo(aim.x - 10, aim.y); ctx.lineTo(aim.x + 10, aim.y);
     ctx.moveTo(aim.x, aim.y - 10); ctx.lineTo(aim.x, aim.y + 10);
     ctx.stroke();
+
+    requestAnimationFrame(gameLoop);
 }
 
 updateUI();

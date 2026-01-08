@@ -1,42 +1,42 @@
 // Enemy Configuration
 const ENEMY_TYPES = [
     { 
-        id: 'imp', symbol: '👿', hp: 1, speed: 0.6, 
+        id: 'imp', symbol: '👿', hp: 1, speed: 0.3, // Was 0.6
         size: 0.8, 
         flyHeight: 0, 
         minWave: 1, 
         xp: 5 
     },
     { 
-        id: 'zombie', symbol: '🧟', hp: 2, speed: 0.25, 
+        id: 'zombie', symbol: '🧟', hp: 2, speed: 0.15, // Was 0.25
         size: 1.0, 
         flyHeight: 0, 
         minWave: 1, 
         xp: 10 
     },
     { 
-        id: 'ghost', symbol: '👻', hp: 2, speed: 0.35, 
+        id: 'ghost', symbol: '👻', hp: 2, speed: 0.2, // Was 0.35
         size: 1.0, 
         flyHeight: 40, 
         minWave: 3, 
         xp: 15 
     },
     { 
-        id: 'ogre', symbol: '👹', hp: 5, speed: 0.15, 
+        id: 'ogre', symbol: '👹', hp: 5, speed: 0.1, // Was 0.15
         size: 1.5, 
         flyHeight: 0, 
         minWave: 4, 
         xp: 25 
     },
     { 
-        id: 'golem', symbol: '🗿', hp: 10, speed: 0.1, 
+        id: 'golem', symbol: '🗿', hp: 10, speed: 0.05, // Was 0.1
         size: 1.8, 
         flyHeight: 0, 
         minWave: 6, 
         xp: 50 
     },
     { 
-        id: 'dragon', symbol: '🐉', hp: 20, speed: 0.15, 
+        id: 'dragon', symbol: '🐉', hp: 20, speed: 0.08, // Was 0.15
         size: 2.2, 
         flyHeight: 80, 
         minWave: 10, 

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TowerHoard</title>
+    <title>Sniper Defense</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -13,7 +13,7 @@
         <div>GOLD: <span id="scoreVal">0</span></div>
         <div>WAVE: <span id="waveVal">1</span></div>
         <div>LEFT: <span id="enemiesLeftVal">0</span></div>
-        <div style="color:#0f0">TOWER: <span id="towerHpVal">100</span>%</div>
+        <div style="color:orange">TOWER: <span id="towerHpVal">100</span>%</div>
         <div style="color:red">PLAYER: <span id="playerHpVal">100</span>%</div>
     </div>
 
@@ -44,6 +44,9 @@
     </div>
 
     <div id="current-dir">N <span id="turret-indicator"></span></div>
+    <div id="danger-left" class="danger-indicator"></div>
+    <div id="danger-right" class="danger-indicator"></div>
+    <div id="danger-behind" class="danger-indicator"></div>
 
     <canvas id="gameCanvas"></canvas>
 

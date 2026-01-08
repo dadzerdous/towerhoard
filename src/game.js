@@ -152,6 +152,10 @@ function updateNavLabels() {
 
 function shoot(e) {
     if (state.gameOver || !state.waveActive || state.shopOpen) return;
+    
+    // PLAY SOUND
+    playBang();
+
     const aim = input.getAim();
     ctx.fillStyle = "rgba(255, 255, 220, 0.3)";
     ctx.fillRect(0, 0, width, height);

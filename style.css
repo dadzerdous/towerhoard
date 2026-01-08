@@ -19,10 +19,54 @@ body {
     position: absolute;
     top: 20px; left: 20px;
     pointer-events: none;
-    font-size: 18px;
+    font-size: 16px;
     text-shadow: 0 0 5px #0f0;
     z-index: 20;
-    line-height: 1.5;
+    line-height: 1.4;
+}
+
+/* Shop Menu */
+#shop-overlay {
+    display: none; /* Hidden by default */
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 10, 0, 0.95);
+    z-index: 50;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #0f0;
+}
+.shop-section {
+    border: 1px solid #0f0;
+    padding: 10px;
+    margin: 10px;
+    width: 80%;
+    max-width: 400px;
+    background: #001100;
+}
+.shop-item {
+    display: flex;
+    justify-content: space-between;
+    margin: 5px 0;
+    align-items: center;
+}
+button {
+    background: #003300;
+    color: #0f0;
+    border: 1px solid #0f0;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-family: inherit;
+}
+button:active { background: #0f0; color: #000; }
+#next-wave-btn {
+    margin-top: 20px;
+    padding: 15px 30px;
+    font-size: 20px;
+    font-weight: bold;
+    background: #0f0;
+    color: #000;
 }
 
 /* Nav Zones */
@@ -40,8 +84,6 @@ body {
     background: transparent;
     text-shadow: 0 0 10px #000;
 }
-.nav-zone:active { color: #fff; background: rgba(0, 50, 0, 0.4); }
-
 #nav-left { top: 50%; left: 0; width: 80px; height: 20%; transform: translateY(-50%); }
 #nav-right { top: 50%; right: 0; width: 80px; height: 20%; transform: translateY(-50%); }
 #nav-down { bottom: 0; left: 50%; width: 30%; height: 80px; transform: translateX(-50%); }
@@ -57,34 +99,15 @@ body {
     color: #0f0;
 }
 
-/* Danger Indicators - Fixed Size, Opacity Only */
-.danger-indicator {
-    position: absolute;
-    pointer-events: none;
-    background: red; /* SOLID RED */
-    opacity: 0;
-    z-index: 15;
-    box-shadow: 0 0 30px red;
-    transition: opacity 0.2s;
-}
-
-#danger-left { top: 20%; bottom: 20%; left: 0; width: 15px; }
-#danger-right { top: 20%; bottom: 20%; right: 0; width: 15px; }
-#danger-behind { bottom: 0; left: 20%; right: 20%; height: 15px; }
-
-/* Restart Button */
 #restart-btn {
-    display: none; /* Hidden normally */
+    display: none;
     position: absolute;
     top: 60%; left: 50%;
     transform: translate(-50%, -50%);
-    background: #0f0;
-    color: #000;
-    border: 2px solid #0f0;
+    background: #f00;
+    color: #fff;
+    border: 2px solid #fff;
     padding: 15px 30px;
     font-size: 24px;
-    font-family: 'Courier New', Courier, monospace;
-    font-weight: bold;
     z-index: 100;
-    cursor: pointer;
 }

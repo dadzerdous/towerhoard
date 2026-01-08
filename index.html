@@ -9,7 +9,7 @@
 <body>
 
     <div id="ui-layer">
-        <div>GOLD: <span id="scoreVal">0</span></div>
+        <div>LVL: <span id="lvlVal">1</span></div> <div>GOLD: <span id="scoreVal">0</span></div>
         <div>WAVE: <span id="waveVal">1</span></div>
         <div>LEFT: <span id="enemiesLeftVal">0</span></div>
         <div style="color:red">HP: <span id="hpVal">100</span>%</div>
@@ -25,6 +25,10 @@
 
     <div id="nav-left" class="nav-zone">W</div>
     <div id="nav-right" class="nav-zone">E</div>
-    <div id="nav-down" class="nav-zone">S</div> <script type="module" src="src/game.js"></script>
+    <div id="nav-down" class="nav-zone">S</div>
+
+    <button id="restart-btn" onclick="location.reload()">TRY AGAIN</button>
+
+    <script type="module" src="src/game.js"></script>
 </body>
 </html>

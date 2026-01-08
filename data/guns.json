@@ -1,1 +1,21 @@
 
+[
+    {
+        "id": "starter_rifle",
+        "name": "Rusty Bolt",
+        "damage": 1,
+        "fireRate": 1000,
+        "zoom": 1.0,
+        "price": 0,
+        "unlocked": true
+    },
+    {
+        "id": "semi_auto",
+        "name": "M14 Tactical",
+        "damage": 2,
+        "fireRate": 400,
+        "zoom": 1.5,
+        "price": 500,
+        "unlocked": false
+    }
+]

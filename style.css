@@ -131,3 +131,59 @@ button:disabled { border-color: #555; color: #555; background: #111; cursor: not
     font-size: 24px;
     z-index: 100;
 }
+/* Add this to your CSS */
+
+#weapon-rack {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    gap: 10px;
+    z-index: 60;
+}
+
+.weapon-slot {
+    width: 80px;
+    height: 60px;
+    background: rgba(0, 20, 0, 0.8);
+    border: 2px solid #0f0;
+    color: #0f0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    user-select: none;
+    transition: all 0.1s;
+}
+
+.weapon-slot span {
+    font-size: 10px;
+    color: #888;
+    margin-bottom: 5px;
+}
+
+.weapon-slot.active {
+    background: #0f0;
+    color: #000;
+    box-shadow: 0 0 15px #0f0;
+    transform: scale(1.1);
+}
+
+.weapon-slot.locked {
+    border-color: #555;
+    color: #555;
+    background: #111;
+    cursor: not-allowed;
+}
+
+/* Adjust nav-down so it doesn't overlap weapons */
+#nav-down { 
+    bottom: 0; 
+    left: 50%; 
+    width: 30%; 
+    height: 80px; 
+    transform: translateX(-50%); 
+}

@@ -29,18 +29,19 @@ window.addEventListener('resize', () => {
 const COST_DAMAGE = 100;
 const COST_TURRET = 100;
 
-// WEAPON CONFIG
+// WEAPON CONFIG - UPDATED RECOIL
 const WEAPONS = {
-    rifle: { name: "Rifle", damageMult: 1, cooldown: 0, recoil: 5, spread: 0 },
-    shotgun: { name: "Shotgun", damageMult: 0.5, cooldown: 800, recoil: 20, spread: 60 },
-    sniper: { name: "50 Cal", damageMult: 5, cooldown: 1500, recoil: 40, spread: 0 }
+    rifle: { name: "Rifle", damageMult: 1, cooldown: 0, recoil: 15, spread: 0 },
+    // RECOIL BUFF: 20 -> 80 (Huge kick)
+    shotgun: { name: "Shotgun", damageMult: 0.5, cooldown: 800, recoil: 80, spread: 60 },
+    sniper: { name: "50 Cal", damageMult: 5, cooldown: 1500, recoil: 60, spread: 0 }
 };
 
 const defaultStats = {
     xp: 0,
     level: 1,
     highWave: 1,
-    unlockedWeapons: ['rifle'], // Start with Rifle
+    unlockedWeapons: ['rifle'],
     stats: {
         damage: 1,
         scopeSize: 1.0, 
@@ -49,6 +50,7 @@ const defaultStats = {
 
 let savedData = Storage.load();
 let player = savedData ? savedData : JSON.parse(JSON.stringify(defaultStats));
+if (!player.unlockedWeapons) player.unlockedWeapons = ['rifle'];
 
 let state = {
     gold: 0,
@@ -60,14 +62,12 @@ let state = {
     enemiesSpawned: 0,
     enemiesToSpawn: 10,
     enemies: [],
-    particles: [],
+    particles: [], // Now handles text AND explosions
     dirIndex: 0, 
     directions: ['N', 'E', 'S', 'W'],
     turrets: { 'N': false, 'E': false, 'S': false, 'W': false },
     turretTimer: 0,
     gameOver: false,
-    
-    // NEW STATE
     currentWeapon: 'rifle',
     lastShotTime: 0,
     recoilY: 0
@@ -81,12 +81,9 @@ document.getElementById('nav-down').addEventListener('click', () => turn(2));
 canvas.addEventListener('mousedown', shoot);
 canvas.addEventListener('touchend', shoot);
 
-// --- WEAPON UI & LOGIC ---
 window.selectWeapon = (id) => {
     if (player.unlockedWeapons.includes(id)) {
         state.currentWeapon = id;
-        
-        // Update UI
         document.querySelectorAll('.weapon-slot').forEach(el => el.classList.remove('active'));
         document.getElementById(`slot-${id}`).classList.add('active');
     }
@@ -104,19 +101,17 @@ window.buyWeapon = (id) => {
 };
 
 function updateWeaponUI() {
+    if (!player.unlockedWeapons) return;
     player.unlockedWeapons.forEach(id => {
-        document.getElementById(`slot-${id}`).classList.remove('locked');
+        const el = document.getElementById(`slot-${id}`);
+        if(el) el.classList.remove('locked');
     });
-    
-    // Hide shop items if bought
     if(player.unlockedWeapons.includes('shotgun')) document.getElementById('shop-shotgun').style.display = 'none';
     if(player.unlockedWeapons.includes('sniper')) document.getElementById('shop-sniper').style.display = 'none';
 }
 
-// Initial check
 updateWeaponUI();
 
-// --- SHOP LOGIC ---
 window.buyUpgrade = (type) => {
     if (type === 'damage') {
         if (player.xp >= COST_DAMAGE) {
@@ -186,7 +181,6 @@ function updateNavLabels() {
 function shoot(e) {
     if (state.gameOver || !state.waveActive || state.shopOpen) return;
 
-    // COOLDOWN CHECK
     let now = Date.now();
     let weapon = WEAPONS[state.currentWeapon];
     if (now - state.lastShotTime < weapon.cooldown) return;
@@ -194,8 +188,7 @@ function shoot(e) {
     state.lastShotTime = now;
     playBang();
 
-    // TRIGGER RECOIL
-    state.recoilY = weapon.recoil;
+    state.recoilY = weapon.recoil; // Apply Kick
 
     const aim = input.getAim();
     ctx.fillStyle = "rgba(255, 255, 220, 0.3)";
@@ -203,15 +196,12 @@ function shoot(e) {
 
     let baseDmg = player.stats.damage;
     let finalDmg = Math.max(1, Math.floor(baseDmg * weapon.damageMult));
-
-    // SPECIAL LOGIC FOR SHOTGUN (Wide Hit)
     let hitRadiusMult = (state.currentWeapon === 'shotgun') ? 3.0 : 1.0; 
 
     checkHit(aim.x, aim.y, finalDmg, true, hitRadiusMult);
 }
 
 function checkHit(x, y, dmg, isPlayer, radiusMult = 1.0) {
-    // If Sniper, can pierce (hit multiple). Others stop at first hit.
     let piercing = (state.currentWeapon === 'sniper');
     let hitCount = 0;
 
@@ -235,13 +225,20 @@ function checkHit(x, y, dmg, isPlayer, radiusMult = 1.0) {
         if (hit) {
             e.hp -= dmg; 
             if (isPlayer) {
-                ctx.fillStyle = "red";
-                ctx.beginPath(); ctx.arc(e.x, drawY, 5, 0, Math.PI*2); ctx.fill();
+                // Flash white on hit
+                ctx.fillStyle = "#fff";
+                ctx.beginPath(); ctx.arc(e.x, drawY, 10, 0, Math.PI*2); ctx.fill();
             }
 
             if (e.hp <= 0) {
+                // --- EXPLOSION LOGIC ---
+                // Spawn 15 particles
+                for(let k=0; k<15; k++) {
+                    spawnExplosionParticle(e.x, drawY, isPlayer ? "#f00" : "#0f0");
+                }
+                
                 state.enemies.splice(i, 1);
-                let xpGain = e.xpValue; // Use enemy specific XP
+                let xpGain = e.xpValue; 
                 let goldGain = 10;
                 player.xp += xpGain;
                 state.gold += goldGain;
@@ -253,8 +250,8 @@ function checkHit(x, y, dmg, isPlayer, radiusMult = 1.0) {
             }
             
             hitCount++;
-            if (!piercing) break; // Stop unless sniper
-            if (piercing && hitCount >= 3) break; // Limit pierce
+            if (!piercing) break; 
+            if (piercing && hitCount >= 3) break; 
         }
     }
 }
@@ -265,15 +262,25 @@ function fireTurrets() {
             let target = null;
             let maxDist = 0;
             state.enemies.forEach(e => {
-                if (e.view === dir && e.distance > maxDist) {
+                // --- TURRET NERF ---
+                // 1. Only target enemies in the same view
+                // 2. Only target enemies that are CLOSE (< 25 distance)
+                if (e.view === dir && e.distance > maxDist && e.distance < 25) {
                     target = e;
                     maxDist = e.distance;
                 }
             });
 
             if (target) {
-                target.hp -= 1; 
+                // Turret Visual Feedback (Laser shot)
+                // We can't draw here easily because we aren't in the render loop, 
+                // but we can spawn a particle to show it fired.
+                
+                target.hp -= 2; // Buffed damage slightly since they fire slower
                 if (target.hp <= 0) {
+                     // Explosion
+                     for(let k=0; k<10; k++) spawnExplosionParticle(target.x, height/2 + 50, "#0f0");
+                     
                      state.enemies = state.enemies.filter(e => e !== target);
                      player.xp += 5;
                      state.gold += 5;
@@ -309,7 +316,6 @@ function updateUI() {
     document.getElementById('waveVal').innerText = state.wave;
     document.getElementById('towerHpVal').innerText = state.towerHp;
     document.getElementById('playerHpVal').innerText = state.playerHp;
-    
     let left = (state.enemiesToSpawn - state.enemiesSpawned) + state.enemies.length;
     document.getElementById('enemiesLeftVal').innerText = left;
 }
@@ -319,21 +325,32 @@ function saveGame() {
     Storage.save(player);
 }
 
+// --- PARTICLE SYSTEMS ---
+
 function spawnFloatingText(text, x, y, color) {
-    state.particles.push({ text, x, y, life: 1.0, color });
+    // Type 0 = Text
+    state.particles.push({ type: 0, text, x, y, life: 1.0, color, vy: -1, vx: 0 });
+}
+
+function spawnExplosionParticle(x, y, color) {
+    // Type 1 = Explosion Chunk
+    state.particles.push({ 
+        type: 1, 
+        x: x, 
+        y: y, 
+        life: 1.0, 
+        color: color, 
+        vx: (Math.random() - 0.5) * 10, // Explode outward
+        vy: (Math.random() - 0.5) * 10 
+    });
 }
 
 function checkIndicators() {
-    let closestL = 0; 
-    let closestR = 0;
-    let closestB = 0;
+    let closestL = 0, closestR = 0, closestB = 0;
     state.enemies.forEach(e => {
-        let enemyViewIndex = state.directions.indexOf(e.view);
-        let diff = enemyViewIndex - state.dirIndex;
-        if (diff === -3) diff = 1; 
-        if (diff === 3) diff = -1; 
-        let danger = 0;
-        if (e.distance < 70) danger = 1 - (e.distance / 70);
+        let diff = state.directions.indexOf(e.view) - state.dirIndex;
+        if (diff === -3) diff = 1; if (diff === 3) diff = -1; 
+        let danger = (e.distance < 70) ? 1 - (e.distance / 70) : 0;
         if (diff === 1) closestR = Math.max(closestR, danger);
         else if (diff === -1) closestL = Math.max(closestL, danger);
         else if (Math.abs(diff) === 2) closestB = Math.max(closestB, danger);
@@ -353,16 +370,13 @@ function gameLoop(timestamp) {
     let dt = timestamp - lastTime;
     lastTime = timestamp;
 
-    // --- GAMEPAD CHECK ---
     if (input.update()) shoot();
-    // ---------------------
 
     if (state.shopOpen) {
         requestAnimationFrame(gameLoop);
         return; 
     }
 
-    // Background
     ctx.fillStyle = "#1a1a1a"; 
     ctx.fillRect(0, 0, width, height);
 
@@ -396,8 +410,9 @@ function gameLoop(timestamp) {
             openShop();
         }
         
+        // TURRET TIMER NERF: 1000ms -> 2000ms
         state.turretTimer += dt;
-        if (state.turretTimer > 1000) {
+        if (state.turretTimer > 2000) {
             fireTurrets();
             state.turretTimer = 0;
         }
@@ -428,30 +443,36 @@ function gameLoop(timestamp) {
         }
     }
     
+    // --- UPDATED PARTICLE RENDERER ---
     for (let i = state.particles.length - 1; i >= 0; i--) {
         let p = state.particles[i];
         p.life -= 0.02;
-        p.y -= 1; 
+        p.x += p.vx; // Move X
+        p.y += p.vy; // Move Y
+        
         ctx.globalAlpha = p.life;
-        ctx.fillStyle = p.color;
-        ctx.font = "bold 20px Arial";
-        ctx.fillText(p.text, p.x, p.y);
+        
+        if (p.type === 0) { // Text
+            ctx.fillStyle = p.color;
+            ctx.font = "bold 20px Arial";
+            ctx.fillText(p.text, p.x, p.y);
+        } else { // Explosion Chunk
+            ctx.fillStyle = p.color;
+            ctx.fillRect(p.x, p.y, 8, 8); // Draw square chunk
+        }
+
         ctx.globalAlpha = 1.0;
         if (p.life <= 0) state.particles.splice(i, 1);
     }
 
     checkIndicators();
 
-    // RECOIL RECOVERY
-    if (state.recoilY > 0) state.recoilY *= 0.8; // Recover quickly
+    if (state.recoilY > 0) state.recoilY *= 0.8; 
 
-    // Scope
     const aim = input.getAim();
     let scopeRadius = (height * 0.22) * player.stats.scopeSize; 
-    
-    // APPLY RECOIL TO SCOPE RENDER (Visual bounce only)
     let rx = aim.x;
-    let ry = aim.y - state.recoilY; // Kick up
+    let ry = aim.y - state.recoilY; 
 
     ctx.save();
     ctx.beginPath();

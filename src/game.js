@@ -6,7 +6,7 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 // --- AUDIO SETUP ---
 // Create the audio object but don't play yet
-const shootSound = new Audio('./assets/sounds/shoot.mp3');
+const shootSound = new Audio('./assets/sounds/shoot.wav');
 shootSound.volume = 0.4; // 40% volume so it's not ear-piercing
 
 // Helper to play sound (allows overlapping shots)

@@ -1,29 +1,28 @@
 export class InputHandler {
     constructor(canvas) {
         this.canvas = canvas;
-        // Start in the center of the screen
         this.aimX = window.innerWidth / 2;
         this.aimY = window.innerHeight / 2;
         
-        // Touch tracking
         this.lastTouchX = 0;
         this.lastTouchY = 0;
         this.isDragging = false;
+        
+        // GAMEPAD STATE
+        this.gamepadIndex = null;
+        this.firePressed = false;
 
         this.init();
     }
 
     init() {
-        // --- MOUSE (Desktop) ---
-        // Mouse stays absolute because that feels better on PC
+        // Mouse
         this.canvas.addEventListener('mousemove', (e) => {
             this.aimX = e.clientX;
             this.aimY = e.clientY;
         });
 
-        // --- TOUCH (Mobile) ---
-        // We use "Relative" movement (Touchpad style)
-        
+        // Touch
         this.canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
             this.isDragging = true;
@@ -34,29 +33,50 @@ export class InputHandler {
         this.canvas.addEventListener('touchmove', (e) => {
             e.preventDefault();
             if (!this.isDragging) return;
-
             const touchX = e.touches[0].clientX;
             const touchY = e.touches[0].clientY;
-
-            // Calculate how far the finger moved
-            const deltaX = touchX - this.lastTouchX;
-            const deltaY = touchY - this.lastTouchY;
-
-            // Apply that movement to the aim (Sensitivity 1.2x for faster feeling)
-            this.aimX += deltaX * 1.2;
-            this.aimY += deltaY * 1.2;
-
-            // Update last pos for next frame
+            this.aimX += (touchX - this.lastTouchX) * 1.2;
+            this.aimY += (touchY - this.lastTouchY) * 1.2;
             this.lastTouchX = touchX;
             this.lastTouchY = touchY;
-
-            // Keep aim inside the screen
             this.clampAim();
         }, { passive: false });
 
         this.canvas.addEventListener('touchend', () => {
             this.isDragging = false;
         });
+
+        // Gamepad Connection
+        window.addEventListener("gamepadconnected", (e) => {
+            console.log("Gamepad connected:", e.gamepad.id);
+            this.gamepadIndex = e.gamepad.index;
+        });
+    }
+
+    // Call this every frame in game.js
+    update() {
+        if (this.gamepadIndex !== null) {
+            const gp = navigator.getGamepads()[this.gamepadIndex];
+            if (gp) {
+                // Left Stick (Axes 0, 1)
+                if (Math.abs(gp.axes[0]) > 0.1) this.aimX += gp.axes[0] * 10;
+                if (Math.abs(gp.axes[1]) > 0.1) this.aimY += gp.axes[1] * 10;
+                
+                // Right Trigger (Button 7) or A Button (Button 0)
+                // We track pressed state to avoid machine-gunning instantly
+                const isFiring = gp.buttons[7].pressed || gp.buttons[0].pressed;
+                
+                // Simple latch: returns true only on the frame it is pressed
+                if (isFiring && !this.firePressed) {
+                    this.firePressed = true;
+                    return true; // SIGNAL TO SHOOT
+                }
+                if (!isFiring) this.firePressed = false;
+                
+                this.clampAim();
+            }
+        }
+        return false;
     }
 
     clampAim() {

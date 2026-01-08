@@ -8,25 +8,23 @@
 </head>
 <body>
 
-    <div id="phone-case">
-        <div id="ui-layer">
-            <div>SCORE: <span id="scoreVal">0</span></div>
-            <div>WAVE: <span id="waveVal">1</span></div>
-            <div style="color:red">HP: <span id="hpVal">100</span>%</div>
-        </div>
-
-        <div id="current-dir">N</div>
-
-        <div id="danger-left" class="danger-indicator"></div>
-        <div id="danger-right" class="danger-indicator"></div>
-        <div id="danger-behind" class="danger-indicator"></div>
-
-        <canvas id="gameCanvas"></canvas>
-
-        <div id="nav-left" class="nav-zone">&lt;</div>
-        <div id="nav-right" class="nav-zone">&gt;</div>
+    <div id="ui-layer">
+        <div>GOLD: <span id="scoreVal">0</span></div>
+        <div>WAVE: <span id="waveVal">1</span></div>
+        <div>LEFT: <span id="enemiesLeftVal">0</span></div>
+        <div style="color:red">HP: <span id="hpVal">100</span>%</div>
     </div>
 
-    <script type="module" src="src/game.js"></script>
+    <div id="current-dir">N</div>
+
+    <div id="danger-left" class="danger-indicator"></div>
+    <div id="danger-right" class="danger-indicator"></div>
+    <div id="danger-behind" class="danger-indicator"></div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="nav-left" class="nav-zone">W</div>
+    <div id="nav-right" class="nav-zone">E</div>
+    <div id="nav-down" class="nav-zone">S</div> <script type="module" src="src/game.js"></script>
 </body>
 </html>

@@ -1,15 +1,22 @@
-
 import { Enemy } from './enemies.js';
 import { InputHandler } from './input.js';
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-// Game Config
-const width = 375;
-const height = 667;
+// Game Config - DYNAMIC SIZE
+let width = window.innerWidth;
+let height = window.innerHeight;
 canvas.width = width;
 canvas.height = height;
+
+// Handle window resizing
+window.addEventListener('resize', () => {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
+});
 
 // State
 let state = {
@@ -17,7 +24,7 @@ let state = {
     hp: 100,
     wave: 1,
     enemies: [],
-    dirIndex: 0, // 0=N, 1=E, 2=S, 3=W
+    dirIndex: 0, 
     directions: ['N', 'E', 'S', 'W'],
     guns: []
 };
@@ -27,51 +34,52 @@ fetch('./data/guns.json')
     .then(response => response.json())
     .then(data => {
         state.guns = data;
-        console.log("Guns loaded:", state.guns);
     });
 
 // Init Input
-const input = new InputHandler(canvas, width, height);
+const input = new InputHandler(canvas);
 
 // Navigation Logic
 document.getElementById('nav-left').addEventListener('click', () => turn(-1));
 document.getElementById('nav-right').addEventListener('click', () => turn(1));
-canvas.addEventListener('mousedown', shoot); // Hook up shooting
+
+// SHOOTING LOGIC
+// We separate "Tap" from "Drag". 
+// If mouse clicks, shoot. If touch ends quickly without much drag, shoot.
+canvas.addEventListener('mousedown', shoot); 
+canvas.addEventListener('touchend', shoot); 
 
 function turn(dir) {
     state.dirIndex += dir;
     if (state.dirIndex < 0) state.dirIndex = 3;
     if (state.dirIndex > 3) state.dirIndex = 0;
-    
     document.getElementById('current-dir').innerText = state.directions[state.dirIndex];
-    // Quick flash
     ctx.fillStyle = "#000";
     ctx.fillRect(0,0,width,height);
 }
 
-function shoot() {
+function shoot(e) {
+    // Prevent shooting if we just finished a long drag (optional, but good for UX)
+    // For now, let's keep it simple: any click/lift fires.
+    
     const aim = input.getAim();
     
-    // Simple flash
-    ctx.fillStyle = "rgba(255, 255, 200, 0.5)";
+    // Muzzle Flash
+    ctx.fillStyle = "rgba(255, 255, 220, 0.4)";
     ctx.fillRect(0, 0, width, height);
 
-    // Hit Logic
     for (let i = state.enemies.length - 1; i >= 0; i--) {
         let e = state.enemies[i];
-        
-        // Must be in current view
         if (e.view !== state.directions[state.dirIndex]) continue;
 
-        // Calculate Hitbox
         let scale = (100 - e.distance) / 10;
         let drawY = e.y + ((100 - e.distance) * (height/300));
-        let size = 25 * scale; 
+        let size = 30 * scale; // Hitbox size
         
         let dist = Math.hypot(e.x - aim.x, drawY - aim.y);
 
         if (dist < size) {
-            e.hp--; // Use gun damage here later
+            e.hp--; 
             if (e.hp <= 0) {
                 state.enemies.splice(i, 1);
                 state.score += 10;
@@ -82,7 +90,6 @@ function shoot() {
     }
 }
 
-// Indicator Logic
 function checkIndicators() {
     let dangerL = false;
     let dangerR = false;
@@ -90,11 +97,8 @@ function checkIndicators() {
 
     state.enemies.forEach(e => {
         if (e.distance > 50) return; 
-
-        // Convert enemy view letter back to index for math
         let enemyViewIndex = state.directions.indexOf(e.view);
         let diff = enemyViewIndex - state.dirIndex;
-        
         if (diff === -3) diff = 1; 
         if (diff === 3) diff = -1; 
         
@@ -108,7 +112,6 @@ function checkIndicators() {
     document.getElementById('danger-behind').style.opacity = dangerB ? 0.6 : 0;
 }
 
-// Main Loop
 let lastTime = 0;
 let spawnTimer = 0;
 let spawnRate = 2000;
@@ -118,11 +121,11 @@ function gameLoop(timestamp) {
     lastTime = timestamp;
 
     // 1. Clear & Background
-    ctx.fillStyle = "#051105";
+    ctx.fillStyle = "#020502"; // Very dark green/black
     ctx.fillRect(0, 0, width, height);
 
     // 2. Horizon
-    ctx.strokeStyle = '#004400';
+    ctx.strokeStyle = '#003300';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(0, height/2); ctx.lineTo(width, height/2);
@@ -153,7 +156,6 @@ function gameLoop(timestamp) {
             }
         }
 
-        // Draw if in current view
         if (e.view === state.directions[state.dirIndex]) {
             e.draw(ctx, width, height);
         }
@@ -161,19 +163,28 @@ function gameLoop(timestamp) {
 
     checkIndicators();
 
-    // 5. Scope Overlay
+    // 5. Scope Overlay (Vignette)
     const aim = input.getAim();
-    let gradient = ctx.createRadialGradient(aim.x, aim.y, 100, aim.x, aim.y, 300);
+    // Scope size adjusts to screen height
+    let scopeRadius = height * 0.35; 
+    
+    let gradient = ctx.createRadialGradient(aim.x, aim.y, scopeRadius * 0.4, aim.x, aim.y, scopeRadius);
     gradient.addColorStop(0, "transparent");
+    gradient.addColorStop(0.9, "black");
     gradient.addColorStop(1, "black");
+    
     ctx.fillStyle = gradient;
     ctx.fillRect(0,0,width,height);
 
-    // 6. Crosshair
-    ctx.strokeStyle = "red";
-    ctx.lineWidth = 2;
+    // 6. Crosshair (Smaller & Cleaner)
+    ctx.strokeStyle = "rgba(255, 0, 0, 0.8)";
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.arc(aim.x, aim.y, 20, 0, Math.PI*2);
+    // Tiny center circle
+    ctx.arc(aim.x, aim.y, 8, 0, Math.PI*2);
+    // Cross lines
+    ctx.moveTo(aim.x - 15, aim.y); ctx.lineTo(aim.x + 15, aim.y);
+    ctx.moveTo(aim.x, aim.y - 15); ctx.lineTo(aim.x, aim.y + 15);
     ctx.stroke();
 
     requestAnimationFrame(gameLoop);

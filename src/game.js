@@ -12,7 +12,7 @@ const renderer = new Renderer(canvas, ctx);
 window.addEventListener('resize', () => {
     renderer.resize(window.innerWidth, window.innerHeight);
 });
-
+renderer.resize(window.innerWidth, window.innerHeight);
 const COST_DAMAGE = 100;
 const COST_TURRET = 100;
 

@@ -305,6 +305,10 @@ function gameLoop(timestamp) {
     let dt = timestamp - lastTime;
     lastTime = timestamp;
 
+    if (input.update()) {
+        shoot(); // Fire if controller trigger pulled
+    }
+
     if (state.shopOpen) {
         requestAnimationFrame(gameLoop);
         return; 

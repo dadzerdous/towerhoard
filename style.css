@@ -1,81 +1,73 @@
 body {
     margin: 0;
     overflow: hidden;
-    background-color: #000; /* Profound blackness */
+    background-color: #000;
     font-family: 'Courier New', Courier, monospace;
     color: #0f0;
-    touch-action: none; /* Prevents browser zooming/scrolling */
+    touch-action: none;
 }
 
 #gameCanvas {
     display: block;
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
     cursor: crosshair;
 }
 
 #ui-layer {
     position: absolute;
-    top: 20px;
-    left: 20px;
+    top: 20px; left: 20px;
     pointer-events: none;
     font-size: 18px;
     text-shadow: 0 0 5px #0f0;
     z-index: 20;
+    line-height: 1.5;
 }
 
-/* Navigation Zones - Invisible but clickable */
+/* Nav Zones */
 .nav-zone {
     position: absolute;
-    top: 50%;
-    width: 80px; /* Wider hit area */
-    height: 20%;
-    transform: translateY(-50%);
     display: flex;
     justify-content: center;
     align-items: center;
     font-size: 40px;
-    color: rgba(0, 255, 0, 0.2); /* Very faint visibility */
+    font-weight: bold;
+    color: rgba(0, 255, 0, 0.3); /* Dim by default */
     cursor: pointer;
     z-index: 30;
     user-select: none;
     background: transparent;
+    text-shadow: 0 0 10px #000;
 }
-.nav-zone:active { color: #0f0; background: rgba(0, 50, 0, 0.4); }
+.nav-zone:active { color: #fff; background: rgba(0, 50, 0, 0.4); }
 
-#nav-left { left: 0; }
-#nav-right { right: 0; }
+#nav-left { top: 50%; left: 0; width: 80px; height: 20%; transform: translateY(-50%); }
+#nav-right { top: 50%; right: 0; width: 80px; height: 20%; transform: translateY(-50%); }
+#nav-down { bottom: 0; left: 50%; width: 30%; height: 80px; transform: translateX(-50%); }
 
 #current-dir {
     position: absolute;
-    top: 20px;
-    width: 100%;
+    top: 10px; width: 100%;
     text-align: center;
-    font-size: 24px;
+    font-size: 30px;
     font-weight: bold;
     pointer-events: none;
     z-index: 20;
+    color: #0f0;
 }
 
-/* Danger Indicators */
+/* Danger Indicators - Flexible size */
 .danger-indicator {
     position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 30px;
     pointer-events: none;
-    background: red;
+    background: linear-gradient(to center, transparent, red);
     opacity: 0;
-    transition: opacity 0.2s;
     z-index: 15;
-    box-shadow: 0 0 40px red;
+    box-shadow: 0 0 20px red;
+    transition: opacity 0.1s, height 0.1s, width 0.1s; /* Smooth growing */
 }
-#danger-left { left: 0; }
-#danger-right { right: 0; }
-#danger-behind { 
-    top: auto; bottom: 0; left: 0; right: 0; 
-    width: 100%; height: 30px; 
-}
+
+#danger-left { top: 50%; left: 0; transform: translateY(-50%); width: 20px; height: 0%; }
+#danger-right { top: 50%; right: 0; transform: translateY(-50%); width: 20px; height: 0%; }
+#danger-behind { bottom: 0; left: 50%; transform: translateX(-50%); width: 0%; height: 20px; }

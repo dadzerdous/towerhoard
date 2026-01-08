@@ -1,51 +1,30 @@
 import { Enemy } from './enemies.js';
 import { InputHandler } from './input.js';
 import { Storage } from './storage.js';
+import { Renderer } from './renderer.js'; // NEW
+import { AudioMgr } from './audio.js';    // NEW
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+const renderer = new Renderer(canvas, ctx);
 
-// --- AUDIO ---
-const shootSound = new Audio('./assets/sounds/shoot.wav');
-shootSound.volume = 0.4;
-function playBang() {
-    const s = shootSound.cloneNode(); 
-    s.volume = 0.4;
-    s.play().catch(e => {});
-}
-
-let width = window.innerWidth;
-let height = window.innerHeight;
-canvas.width = width;
-canvas.height = height;
-
+// --- SETUP ---
 window.addEventListener('resize', () => {
-    width = window.innerWidth;
-    height = window.innerHeight;
-    canvas.width = width;
-    canvas.height = height;
+    renderer.resize(window.innerWidth, window.innerHeight);
 });
 
 const COST_DAMAGE = 100;
 const COST_TURRET = 100;
 
-// WEAPON CONFIG - UPDATED RECOIL
 const WEAPONS = {
-    rifle: { name: "Rifle", damageMult: 1, cooldown: 0, recoil: 15, spread: 0 },
-    // RECOIL BUFF: 20 -> 80 (Huge kick)
-    shotgun: { name: "Shotgun", damageMult: 0.5, cooldown: 800, recoil: 80, spread: 60 },
-    sniper: { name: "50 Cal", damageMult: 5, cooldown: 1500, recoil: 60, spread: 0 }
+    rifle: { name: "Rifle", damageMult: 1, cooldown: 0, recoil: 15 },
+    shotgun: { name: "Shotgun", damageMult: 0.5, cooldown: 800, recoil: 80 },
+    sniper: { name: "50 Cal", damageMult: 5, cooldown: 1500, recoil: 60 }
 };
 
 const defaultStats = {
-    xp: 0,
-    level: 1,
-    highWave: 1,
-    unlockedWeapons: ['rifle'],
-    stats: {
-        damage: 1,
-        scopeSize: 1.0, 
-    }
+    xp: 0, level: 1, highWave: 1, unlockedWeapons: ['rifle'],
+    stats: { damage: 1, scopeSize: 1.0 }
 };
 
 let savedData = Storage.load();
@@ -53,28 +32,19 @@ let player = savedData ? savedData : JSON.parse(JSON.stringify(defaultStats));
 if (!player.unlockedWeapons) player.unlockedWeapons = ['rifle'];
 
 let state = {
-    gold: 0,
-    towerHp: 100,
-    playerHp: 100,
-    wave: 1,
-    waveActive: true,
-    shopOpen: false,
-    enemiesSpawned: 0,
-    enemiesToSpawn: 10,
-    enemies: [],
-    particles: [], // Now handles text AND explosions
-    dirIndex: 0, 
-    directions: ['N', 'E', 'S', 'W'],
+    gold: 0, towerHp: 100, playerHp: 100,
+    wave: 1, waveActive: true, shopOpen: false,
+    enemiesSpawned: 0, enemiesToSpawn: 10,
+    enemies: [], particles: [],
+    dirIndex: 0, directions: ['N', 'E', 'S', 'W'],
     turrets: { 'N': false, 'E': false, 'S': false, 'W': false },
-    turretTimer: 0,
-    gameOver: false,
-    currentWeapon: 'rifle',
-    lastShotTime: 0,
-    recoilY: 0
+    turretTimer: 0, gameOver: false,
+    currentWeapon: 'rifle', lastShotTime: 0, recoilY: 0
 };
 
 const input = new InputHandler(canvas);
 
+// --- CONTROLS ---
 document.getElementById('nav-left').addEventListener('click', () => turn(-1));
 document.getElementById('nav-right').addEventListener('click', () => turn(1));
 document.getElementById('nav-down').addEventListener('click', () => turn(2));
@@ -95,62 +65,27 @@ window.buyWeapon = (id) => {
         player.xp -= cost;
         player.unlockedWeapons.push(id);
         saveGame();
-        updateUI();
         updateWeaponUI();
     }
 };
 
-function updateWeaponUI() {
-    if (!player.unlockedWeapons) return;
-    player.unlockedWeapons.forEach(id => {
-        const el = document.getElementById(`slot-${id}`);
-        if(el) el.classList.remove('locked');
-    });
-    if(player.unlockedWeapons.includes('shotgun')) document.getElementById('shop-shotgun').style.display = 'none';
-    if(player.unlockedWeapons.includes('sniper')) document.getElementById('shop-sniper').style.display = 'none';
-}
-
-updateWeaponUI();
-
 window.buyUpgrade = (type) => {
-    if (type === 'damage') {
-        if (player.xp >= COST_DAMAGE) {
-            player.xp -= COST_DAMAGE;
-            player.stats.damage++;
-            saveGame();
-            updateUI();
-        }
+    if (type === 'damage' && player.xp >= COST_DAMAGE) {
+        player.xp -= COST_DAMAGE;
+        player.stats.damage++;
+        saveGame();
     }
 };
 
 window.buyTurret = () => {
     let currentDir = state.directions[state.dirIndex];
-    if (state.turrets[currentDir]) return; 
-    
-    if (state.gold >= COST_TURRET) {
+    if (!state.turrets[currentDir] && state.gold >= COST_TURRET) {
         state.gold -= COST_TURRET;
         state.turrets[currentDir] = true;
-        updateUI();
         updateNavLabels();
         updateShopButtons(); 
     }
 };
-
-function updateShopButtons() {
-    let currentDir = state.directions[state.dirIndex];
-    const btn = document.getElementById('btn-turret');
-    if (state.turrets[currentDir]) {
-        btn.innerText = "OWNED";
-        btn.disabled = true;
-        btn.style.color = "#888";
-        btn.style.borderColor = "#888";
-    } else {
-        btn.innerText = `${COST_TURRET} G`;
-        btn.disabled = false;
-        btn.style.color = "#0f0";
-        btn.style.borderColor = "#0f0";
-    }
-}
 
 window.nextWave = () => {
     document.getElementById('shop-overlay').style.display = 'none';
@@ -158,27 +93,16 @@ window.nextWave = () => {
     startNextWave();
 };
 
+// --- LOGIC ---
+
 function turn(dirChange) {
     state.dirIndex = (state.dirIndex + dirChange + 4) % 4;
     updateNavLabels();
-    if (state.shopOpen) updateShopButtons(); 
-    ctx.fillStyle = "#000";
-    ctx.fillRect(0,0,width,height);
+    if (state.shopOpen) updateShopButtons();
+    // Visual flash is handled by render loop now, but we can clear briefly
 }
 
-function updateNavLabels() {
-    let cur = state.directions[state.dirIndex];
-    document.getElementById('current-dir').innerHTML = cur + (state.turrets[cur] ? " <span style='font-size:20px'>🤖</span>" : "");
-    const leftIndex = (state.dirIndex + 3) % 4;
-    const rightIndex = (state.dirIndex + 1) % 4;
-    const backIndex = (state.dirIndex + 2) % 4;
-    const getIcon = (dir) => state.turrets[dir] ? "🤖" : "";
-    document.getElementById('nav-left').innerText = state.directions[leftIndex] + getIcon(state.directions[leftIndex]);
-    document.getElementById('nav-right').innerText = state.directions[rightIndex] + getIcon(state.directions[rightIndex]);
-    document.getElementById('nav-down').innerText = state.directions[backIndex] + getIcon(state.directions[backIndex]);
-}
-
-function shoot(e) {
+function shoot() {
     if (state.gameOver || !state.waveActive || state.shopOpen) return;
 
     let now = Date.now();
@@ -186,14 +110,12 @@ function shoot(e) {
     if (now - state.lastShotTime < weapon.cooldown) return;
 
     state.lastShotTime = now;
-    playBang();
+    AudioMgr.playShoot(); // Using new Audio Manager
 
-    state.recoilY = weapon.recoil; // Apply Kick
+    state.recoilY = weapon.recoil;
+    renderer.drawMuzzleFlash(); // Using Renderer
 
     const aim = input.getAim();
-    ctx.fillStyle = "rgba(255, 255, 220, 0.3)";
-    ctx.fillRect(0, 0, width, height);
-
     let baseDmg = player.stats.damage;
     let finalDmg = Math.max(1, Math.floor(baseDmg * weapon.damageMult));
     let hitRadiusMult = (state.currentWeapon === 'shotgun') ? 3.0 : 1.0; 
@@ -211,42 +133,29 @@ function checkHit(x, y, dmg, isPlayer, radiusMult = 1.0) {
         if (isPlayer && e.view !== state.directions[state.dirIndex]) continue;
 
         let scale = (100 - e.distance) / 10;
-        let drawY = e.y + ((100 - e.distance) * (height/300));
+        let drawY = e.y + ((100 - e.distance) * (canvas.height/300));
         let size = (30 * scale) * radiusMult; 
         
         let hit = false;
         if (isPlayer) {
             let dist = Math.hypot(e.x - x, drawY - y);
             if (dist < size) hit = true;
-        } else {
-            hit = true; 
-        }
+        } else { hit = true; } // Auto-hit for turrets
 
         if (hit) {
             e.hp -= dmg; 
-            if (isPlayer) {
-                // Flash white on hit
-                ctx.fillStyle = "#fff";
-                ctx.beginPath(); ctx.arc(e.x, drawY, 10, 0, Math.PI*2); ctx.fill();
-            }
-
             if (e.hp <= 0) {
-                // --- EXPLOSION LOGIC ---
-                // Spawn 15 particles
-                for(let k=0; k<15; k++) {
-                    spawnExplosionParticle(e.x, drawY, isPlayer ? "#f00" : "#0f0");
-                }
-                
+                // Kill Rewards
+                spawnExplosion(e.x, drawY, isPlayer ? "#f00" : "#0f0");
                 state.enemies.splice(i, 1);
-                let xpGain = e.xpValue; 
-                let goldGain = 10;
-                player.xp += xpGain;
-                state.gold += goldGain;
-                
-                spawnFloatingText(`+${xpGain}XP`, e.x, drawY - 20, "#0ff");
-                spawnFloatingText(`+$${goldGain}`, e.x, drawY - 40, "#ff0");
-                updateUI();
+                player.xp += e.xpValue;
+                state.gold += 10;
+                spawnFloatingText(`+${e.xpValue}XP`, e.x, drawY - 20, "#0ff");
+                spawnFloatingText(`+$10`, e.x, drawY - 40, "#ff0");
                 saveGame();
+            } else if (isPlayer) {
+                // Hit Flash (Visual only, no logic)
+                // We could ask renderer to draw a hit marker here
             }
             
             hitCount++;
@@ -262,42 +171,43 @@ function fireTurrets() {
             let target = null;
             let maxDist = 0;
             state.enemies.forEach(e => {
-                // --- TURRET NERF ---
-                // 1. Only target enemies in the same view
-                // 2. Only target enemies that are CLOSE (< 25 distance)
                 if (e.view === dir && e.distance > maxDist && e.distance < 25) {
                     target = e;
                     maxDist = e.distance;
                 }
             });
-
             if (target) {
-                // Turret Visual Feedback (Laser shot)
-                // We can't draw here easily because we aren't in the render loop, 
-                // but we can spawn a particle to show it fired.
-                
-                target.hp -= 2; // Buffed damage slightly since they fire slower
+                target.hp -= 2;
                 if (target.hp <= 0) {
-                     // Explosion
-                     for(let k=0; k<10; k++) spawnExplosionParticle(target.x, height/2 + 50, "#0f0");
-                     
+                     spawnExplosion(target.x, canvas.height/2 + 50, "#0f0");
                      state.enemies = state.enemies.filter(e => e !== target);
-                     player.xp += 5;
-                     state.gold += 5;
-                     updateUI();
+                     player.xp += 5; state.gold += 5;
                 }
             }
         }
     });
 }
 
+function spawnFloatingText(text, x, y, color) {
+    state.particles.push({ type: 0, text, x, y, life: 1.0, color, vy: -1, vx: 0 });
+}
+
+function spawnExplosion(x, y, color) {
+    for(let k=0; k<15; k++) {
+        state.particles.push({ 
+            type: 1, x, y, life: 1.0, color, 
+            vx: (Math.random() - 0.5) * 10, vy: (Math.random() - 0.5) * 10 
+        });
+    }
+}
+
+// --- HELPERS ---
 function startNextWave() {
     state.wave++;
     state.enemiesSpawned = 0;
     state.enemiesToSpawn = 10 + (state.wave * 2); 
     state.enemies = [];
     state.waveActive = true;
-    updateUI();
     saveGame();
 }
 
@@ -305,19 +215,39 @@ function openShop() {
     state.shopOpen = true;
     document.getElementById('shop-overlay').style.display = 'flex';
     document.getElementById('btn-damage').innerText = `${COST_DAMAGE} XP`;
-    updateShopButtons(); 
-    updateWeaponUI();
+    updateShopButtons(); updateWeaponUI();
 }
 
-function updateUI() {
-    document.getElementById('lvlVal').innerText = player.level;
-    document.getElementById('xpVal').innerText = player.xp;
-    document.getElementById('scoreVal').innerText = `$${state.gold}`;
-    document.getElementById('waveVal').innerText = state.wave;
-    document.getElementById('towerHpVal').innerText = state.towerHp;
-    document.getElementById('playerHpVal').innerText = state.playerHp;
-    let left = (state.enemiesToSpawn - state.enemiesSpawned) + state.enemies.length;
-    document.getElementById('enemiesLeftVal').innerText = left;
+function updateWeaponUI() {
+    if (!player.unlockedWeapons) return;
+    player.unlockedWeapons.forEach(id => {
+        const el = document.getElementById(`slot-${id}`);
+        if(el) el.classList.remove('locked');
+    });
+    if(player.unlockedWeapons.includes('shotgun')) document.getElementById('shop-shotgun').style.display = 'none';
+    if(player.unlockedWeapons.includes('sniper')) document.getElementById('shop-sniper').style.display = 'none';
+}
+
+function updateShopButtons() {
+    let currentDir = state.directions[state.dirIndex];
+    const btn = document.getElementById('btn-turret');
+    if (state.turrets[currentDir]) {
+        btn.innerText = "OWNED"; btn.disabled = true; btn.style.color = "#888"; btn.style.borderColor = "#888";
+    } else {
+        btn.innerText = `${COST_TURRET} G`; btn.disabled = false; btn.style.color = "#0f0"; btn.style.borderColor = "#0f0";
+    }
+}
+
+function updateNavLabels() {
+    let cur = state.directions[state.dirIndex];
+    const getIcon = (dir) => state.turrets[dir] ? "🤖" : "";
+    document.getElementById('current-dir').innerHTML = cur + (state.turrets[cur] ? " <span style='font-size:20px'>🤖</span>" : "");
+    const leftIndex = (state.dirIndex + 3) % 4;
+    const rightIndex = (state.dirIndex + 1) % 4;
+    const backIndex = (state.dirIndex + 2) % 4;
+    document.getElementById('nav-left').innerText = state.directions[leftIndex] + getIcon(state.directions[leftIndex]);
+    document.getElementById('nav-right').innerText = state.directions[rightIndex] + getIcon(state.directions[rightIndex]);
+    document.getElementById('nav-down').innerText = state.directions[backIndex] + getIcon(state.directions[backIndex]);
 }
 
 function saveGame() {
@@ -325,43 +255,7 @@ function saveGame() {
     Storage.save(player);
 }
 
-// --- PARTICLE SYSTEMS ---
-
-function spawnFloatingText(text, x, y, color) {
-    // Type 0 = Text
-    state.particles.push({ type: 0, text, x, y, life: 1.0, color, vy: -1, vx: 0 });
-}
-
-function spawnExplosionParticle(x, y, color) {
-    // Type 1 = Explosion Chunk
-    state.particles.push({ 
-        type: 1, 
-        x: x, 
-        y: y, 
-        life: 1.0, 
-        color: color, 
-        vx: (Math.random() - 0.5) * 10, // Explode outward
-        vy: (Math.random() - 0.5) * 10 
-    });
-}
-
-function checkIndicators() {
-    let closestL = 0, closestR = 0, closestB = 0;
-    state.enemies.forEach(e => {
-        let diff = state.directions.indexOf(e.view) - state.dirIndex;
-        if (diff === -3) diff = 1; if (diff === 3) diff = -1; 
-        let danger = (e.distance < 70) ? 1 - (e.distance / 70) : 0;
-        if (diff === 1) closestR = Math.max(closestR, danger);
-        else if (diff === -1) closestL = Math.max(closestL, danger);
-        else if (Math.abs(diff) === 2) closestB = Math.max(closestB, danger);
-    });
-    document.getElementById('danger-left').style.opacity = closestL;
-    document.getElementById('danger-right').style.opacity = closestR;
-    document.getElementById('danger-behind').style.opacity = closestB;
-}
-
 // --- MAIN LOOP ---
-
 let lastTime = 0;
 let spawnTimer = 0;
 let spawnRate = 2000;
@@ -377,40 +271,29 @@ function gameLoop(timestamp) {
         return; 
     }
 
-    ctx.fillStyle = "#1a1a1a"; 
-    ctx.fillRect(0, 0, width, height);
+    // 1. RENDER BACKGROUND
+    renderer.clear();
 
     if (state.gameOver) {
-        ctx.fillStyle = "red";
-        ctx.font = "40px Courier";
-        ctx.textAlign = "center";
-        ctx.fillText(state.towerHp <= 0 ? "TOWER DESTROYED" : "YOU DIED", width/2, height/2 - 50);
-        document.getElementById('restart-btn').style.display = 'block';
+        renderer.drawGameOver(state.towerHp <= 0);
         return;
     }
 
-    ctx.strokeStyle = '#222';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(0, height/2); ctx.lineTo(width, height/2);
-    ctx.stroke();
-
+    // 2. LOGIC: SPAWN & TURRETS
     if (state.waveActive) {
         if (state.enemiesSpawned < state.enemiesToSpawn) {
             spawnTimer += dt;
             if (spawnTimer > spawnRate) {
-                state.enemies.push(new Enemy(width, height, state.wave));
+                state.enemies.push(new Enemy(renderer.width, renderer.height, state.wave));
                 state.enemiesSpawned++;
                 spawnTimer = 0;
                 spawnRate = Math.max(500, 2000 - (state.wave * 100)); 
-                updateUI();
             }
         } else if (state.enemies.length === 0) {
             state.waveActive = false;
             openShop();
         }
         
-        // TURRET TIMER NERF: 1000ms -> 2000ms
         state.turretTimer += dt;
         if (state.turretTimer > 2000) {
             fireTurrets();
@@ -418,94 +301,47 @@ function gameLoop(timestamp) {
         }
     }
 
+    // 3. LOGIC: ENEMIES
     state.enemies.sort((a, b) => b.distance - a.distance);
     
     for (let i = state.enemies.length - 1; i >= 0; i--) {
         let e = state.enemies[i];
         e.update();
         
+        // Damage Logic
         if (e.distance <= 0) {
             let enemyDir = e.view;
             let currentDir = state.directions[state.dirIndex];
             state.towerHp -= 10;
-            spawnFloatingText("-10 TOWER", width/2, height/2 - 20, "orange");
+            spawnFloatingText("-10 TOWER", renderer.width/2, renderer.height/2 - 20, "orange");
             if (enemyDir !== currentDir) {
                 state.playerHp -= 10; 
-                spawnFloatingText("-10 HP", width/2, height/2 + 30, "red");
+                spawnFloatingText("-10 HP", renderer.width/2, renderer.height/2 + 30, "red");
             }
             state.enemies.splice(i, 1);
-            updateUI();
             if (state.towerHp <= 0 || state.playerHp <= 0) state.gameOver = true;
         }
 
+        // Draw Logic (Delegated to Enemy class)
         if (e.view === state.directions[state.dirIndex]) {
-            e.draw(ctx, width, height);
+            e.draw(ctx, renderer.width, renderer.height);
         }
     }
-    
-    // --- UPDATED PARTICLE RENDERER ---
-    for (let i = state.particles.length - 1; i >= 0; i--) {
-        let p = state.particles[i];
-        p.life -= 0.02;
-        p.x += p.vx; // Move X
-        p.y += p.vy; // Move Y
-        
-        ctx.globalAlpha = p.life;
-        
-        if (p.type === 0) { // Text
-            ctx.fillStyle = p.color;
-            ctx.font = "bold 20px Arial";
-            ctx.fillText(p.text, p.x, p.y);
-        } else { // Explosion Chunk
-            ctx.fillStyle = p.color;
-            ctx.fillRect(p.x, p.y, 8, 8); // Draw square chunk
-        }
 
-        ctx.globalAlpha = 1.0;
-        if (p.life <= 0) state.particles.splice(i, 1);
-    }
+    // 4. RENDER: PARTICLES & UI
+    renderer.drawParticles(state.particles);
+    renderer.updateIndicators(state.enemies, state.dirIndex, state.directions);
+    renderer.updateUI(player, state, state.enemiesToSpawn);
 
-    checkIndicators();
-
+    // 5. RENDER: SCOPE (With Recoil)
     if (state.recoilY > 0) state.recoilY *= 0.8; 
-
     const aim = input.getAim();
-    let scopeRadius = (height * 0.22) * player.stats.scopeSize; 
-    let rx = aim.x;
-    let ry = aim.y - state.recoilY; 
-
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(0, 0, width, height); 
-    ctx.arc(rx, ry, scopeRadius, 0, Math.PI*2, true); 
-    ctx.clip();
-    
-    ctx.fillStyle = "#000";
-    ctx.fillRect(0, 0, width, height);
-    ctx.restore();
-
-    ctx.strokeStyle = "#002200"; 
-    ctx.lineWidth = 10;
-    ctx.beginPath();
-    ctx.arc(rx, ry, scopeRadius, 0, Math.PI*2);
-    ctx.stroke();
-    
-    ctx.strokeStyle = "#0f0"; 
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.arc(rx, ry, scopeRadius - 5, 0, Math.PI*2);
-    ctx.stroke();
-
-    ctx.strokeStyle = "rgba(255, 0, 0, 0.9)";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(rx - 10, ry); ctx.lineTo(rx + 10, ry);
-    ctx.moveTo(rx, ry - 10); ctx.lineTo(rx, ry + 10);
-    ctx.stroke();
+    renderer.drawScope(aim.x, aim.y, player.stats.scopeSize, state.recoilY);
 
     requestAnimationFrame(gameLoop);
 }
 
-updateUI();
+// Init
 updateWeaponUI();
+updateNavLabels();
 requestAnimationFrame(gameLoop);

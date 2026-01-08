@@ -17,18 +17,38 @@
         <div style="color:red">PLAYER: <span id="playerHpVal">100</span>%</div>
     </div>
 
+    <div id="weapon-rack">
+        <div class="weapon-slot active" id="slot-rifle" onclick="window.selectWeapon('rifle')">
+            <span>1</span> RIFLE
+        </div>
+        <div class="weapon-slot locked" id="slot-shotgun" onclick="window.selectWeapon('shotgun')">
+            <span>2</span> SHOTGUN
+        </div>
+        <div class="weapon-slot locked" id="slot-sniper" onclick="window.selectWeapon('sniper')">
+            <span>3</span> 50 CAL
+        </div>
+    </div>
+
     <div id="shop-overlay">
         <h2>WAVE COMPLETE</h2>
         
         <div class="shop-section">
-            <h3>PERMANENT UPGRADES (XP)</h3>
-            <div class="shop-item" onclick="window.buyUpgrade('damage')">
-                <span>Damage Up (+1)</span>
-                <button id="btn-damage">100 XP</button>
+            <h3>ARSENAL (XP)</h3>
+            <div class="shop-item" id="shop-shotgun">
+                <span>Unlock Shotgun (AOE)</span>
+                <button onclick="window.buyWeapon('shotgun')">200 XP</button>
             </div>
-            <div class="shop-item" onclick="window.buyUpgrade('scope')">
-                <span>Scope Zoom (+10%)</span>
-                <button id="btn-scope">50 XP</button>
+            <div class="shop-item" id="shop-sniper">
+                <span>Unlock .50 Cal (1 Shot)</span>
+                <button onclick="window.buyWeapon('sniper')">500 XP</button>
+            </div>
+        </div>
+
+        <div class="shop-section">
+            <h3>UPGRADES (XP)</h3>
+            <div class="shop-item" onclick="window.buyUpgrade('damage')">
+                <span>Base Damage (+1)</span>
+                <button id="btn-damage">100 XP</button>
             </div>
         </div>
 

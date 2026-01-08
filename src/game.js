@@ -41,44 +41,36 @@ let state = {
     enemiesToSpawn: 10,
     enemies: [],
     particles: [],
-    dirIndex: 0, // 0=N, 1=E, 2=S, 3=W
+    dirIndex: 0, 
     directions: ['N', 'E', 'S', 'W'],
     gameOver: false
 };
 
 const input = new InputHandler(canvas);
 
-// --- NAVIGATION UPDATES ---
 document.getElementById('nav-left').addEventListener('click', () => turn(-1));
 document.getElementById('nav-right').addEventListener('click', () => turn(1));
-document.getElementById('nav-down').addEventListener('click', () => turn(2)); // Turn 180
+document.getElementById('nav-down').addEventListener('click', () => turn(2));
 canvas.addEventListener('mousedown', shoot);
 canvas.addEventListener('touchend', shoot);
 
 function turn(dirChange) {
-    state.dirIndex = (state.dirIndex + dirChange + 4) % 4; // Wrap around math
+    state.dirIndex = (state.dirIndex + dirChange + 4) % 4;
     updateNavLabels();
-    
-    // Quick Swipe Effect
     ctx.fillStyle = "#000";
     ctx.fillRect(0,0,width,height);
 }
 
 function updateNavLabels() {
-    // Current Facing
     document.getElementById('current-dir').innerText = state.directions[state.dirIndex];
-    
-    // Calculate relative directions
-    const leftIndex = (state.dirIndex + 3) % 4; // -1
-    const rightIndex = (state.dirIndex + 1) % 4; // +1
-    const backIndex = (state.dirIndex + 2) % 4;  // +2
-    
+    const leftIndex = (state.dirIndex + 3) % 4;
+    const rightIndex = (state.dirIndex + 1) % 4;
+    const backIndex = (state.dirIndex + 2) % 4;
     document.getElementById('nav-left').innerText = state.directions[leftIndex];
     document.getElementById('nav-right').innerText = state.directions[rightIndex];
     document.getElementById('nav-down').innerText = state.directions[backIndex];
 }
 
-// Initial Label Set
 updateNavLabels();
 
 function spawnFloatingText(text, x, y, color) {
@@ -112,6 +104,13 @@ function shoot(e) {
                 let goldGain = 5;
                 player.xp += xpGain;
                 player.gold += goldGain;
+                
+                // Simple Level Up Logic
+                if (player.xp > player.level * 100) {
+                    player.level++;
+                    spawnFloatingText("LEVEL UP!", width/2, height/2, "#0f0");
+                }
+
                 spawnFloatingText(`+${xpGain}XP`, e.x, drawY - 20, "#0ff");
                 updateUI();
                 saveGame();
@@ -133,11 +132,10 @@ function startNextWave() {
 }
 
 function updateUI() {
+    document.getElementById('lvlVal').innerText = player.level;
     document.getElementById('scoreVal').innerText = `$${player.gold}`;
     document.getElementById('waveVal').innerText = state.wave;
     document.getElementById('hpVal').innerText = state.hp;
-    
-    // Enemies Remaining
     let left = (state.enemiesToSpawn - state.enemiesSpawned) + state.enemies.length;
     document.getElementById('enemiesLeftVal').innerText = left;
 }
@@ -147,21 +145,17 @@ function saveGame() {
     Storage.save(player);
 }
 
-// --- DYNAMIC INDICATORS ---
 function checkIndicators() {
-    let closestL = 0; // 0 to 100
+    let closestL = 0; 
     let closestR = 0;
     let closestB = 0;
 
     state.enemies.forEach(e => {
-        // Find relative direction
         let enemyViewIndex = state.directions.indexOf(e.view);
         let diff = enemyViewIndex - state.dirIndex;
         if (diff === -3) diff = 1; 
         if (diff === 3) diff = -1; 
         
-        // Calculate "Danger Level" (0.0 to 1.0)
-        // Only start showing when distance < 70
         let danger = 0;
         if (e.distance < 70) {
             danger = 1 - (e.distance / 70);
@@ -172,21 +166,11 @@ function checkIndicators() {
         else if (Math.abs(diff) === 2) closestB = Math.max(closestB, danger);
     });
 
-    // Apply Dynamic Styles (Opacity AND Size)
-    const elL = document.getElementById('danger-left');
-    elL.style.opacity = closestL;
-    elL.style.height = (closestL * 100) + "%"; // Grow vertically
-
-    const elR = document.getElementById('danger-right');
-    elR.style.opacity = closestR;
-    elR.style.height = (closestR * 100) + "%"; 
-
-    const elB = document.getElementById('danger-behind');
-    elB.style.opacity = closestB;
-    elB.style.width = (closestB * 100) + "%"; // Grow horizontally
+    // Just Opacity now, no resizing
+    document.getElementById('danger-left').style.opacity = closestL;
+    document.getElementById('danger-right').style.opacity = closestR;
+    document.getElementById('danger-behind').style.opacity = closestB;
 }
-
-// --- MAIN LOOP ---
 
 let lastTime = 0;
 let spawnTimer = 0;
@@ -196,20 +180,25 @@ function gameLoop(timestamp) {
     let dt = timestamp - lastTime;
     lastTime = timestamp;
 
-    ctx.fillStyle = "#000";
+    // 1. WORLD BACKGROUND (Dark Grey)
+    // This is what you see INSIDE the scope
+    ctx.fillStyle = "#1a1a1a"; 
     ctx.fillRect(0, 0, width, height);
 
     if (state.gameOver) {
         ctx.fillStyle = "red";
         ctx.font = "40px Courier";
         ctx.textAlign = "center";
-        ctx.fillText("TOWER LOST", width/2, height/2);
-        if (input.isDragging) location.reload(); 
-        requestAnimationFrame(gameLoop);
+        ctx.fillText("TOWER LOST", width/2, height/2 - 50);
+        
+        // Reveal Button
+        document.getElementById('restart-btn').style.display = 'block';
+        
+        // Stop Loop
         return;
     }
 
-    ctx.strokeStyle = '#111';
+    ctx.strokeStyle = '#222';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(0, height/2); ctx.lineTo(width, height/2);
@@ -223,7 +212,7 @@ function gameLoop(timestamp) {
                 state.enemiesSpawned++;
                 spawnTimer = 0;
                 spawnRate = Math.max(500, 2000 - (state.wave * 100)); 
-                updateUI(); // Update count
+                updateUI();
             }
         } else if (state.enemies.length === 0) {
             state.waveActive = false;
@@ -252,7 +241,6 @@ function gameLoop(timestamp) {
         }
     }
     
-    // Draw Particles
     for (let i = state.particles.length - 1; i >= 0; i--) {
         let p = state.particles[i];
         p.life -= 0.02;
@@ -267,11 +255,8 @@ function gameLoop(timestamp) {
 
     checkIndicators();
 
-    // --- SCOPE RENDER ---
+    // --- SCOPE MASK ---
     const aim = input.getAim();
-    
-    // *** SCOPE SIZE TWEAK HERE ***
-    // Changed 0.35 to 0.22 for "Much Smaller"
     let scopeRadius = (height * 0.22) * player.stats.scopeSize; 
     
     ctx.save();
@@ -280,6 +265,8 @@ function gameLoop(timestamp) {
     ctx.arc(aim.x, aim.y, scopeRadius, 0, Math.PI*2, true); 
     ctx.clip();
     
+    // 2. VOID BACKGROUND (Pure Black)
+    // This is what you see OUTSIDE the scope
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, width, height);
     ctx.restore();

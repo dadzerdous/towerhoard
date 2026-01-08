@@ -33,7 +33,7 @@ body {
     align-items: center;
     font-size: 40px;
     font-weight: bold;
-    color: rgba(0, 255, 0, 0.3); /* Dim by default */
+    color: rgba(0, 255, 0, 0.3);
     cursor: pointer;
     z-index: 30;
     user-select: none;
@@ -57,17 +57,34 @@ body {
     color: #0f0;
 }
 
-/* Danger Indicators - Flexible size */
+/* Danger Indicators - Fixed Size, Opacity Only */
 .danger-indicator {
     position: absolute;
     pointer-events: none;
-    background: linear-gradient(to center, transparent, red);
+    background: red; /* SOLID RED */
     opacity: 0;
     z-index: 15;
-    box-shadow: 0 0 20px red;
-    transition: opacity 0.1s, height 0.1s, width 0.1s; /* Smooth growing */
+    box-shadow: 0 0 30px red;
+    transition: opacity 0.2s;
 }
 
-#danger-left { top: 50%; left: 0; transform: translateY(-50%); width: 20px; height: 0%; }
-#danger-right { top: 50%; right: 0; transform: translateY(-50%); width: 20px; height: 0%; }
-#danger-behind { bottom: 0; left: 50%; transform: translateX(-50%); width: 0%; height: 20px; }
+#danger-left { top: 20%; bottom: 20%; left: 0; width: 15px; }
+#danger-right { top: 20%; bottom: 20%; right: 0; width: 15px; }
+#danger-behind { bottom: 0; left: 20%; right: 20%; height: 15px; }
+
+/* Restart Button */
+#restart-btn {
+    display: none; /* Hidden normally */
+    position: absolute;
+    top: 60%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: #0f0;
+    color: #000;
+    border: 2px solid #0f0;
+    padding: 15px 30px;
+    font-size: 24px;
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: bold;
+    z-index: 100;
+    cursor: pointer;
+}

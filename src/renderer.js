@@ -28,13 +28,13 @@ export class Renderer {
         this.ctx.stroke();
     }
 
-    // NEW: Draw distinctive landmarks per direction
+    // Draw distinctive landmarks per direction
     drawEnvironment(dir, castleProgress, castleDir) {
         const cx = this.width / 2;
         const cy = this.height / 2;
         
         this.ctx.save();
-        this.ctx.fillStyle = "#0a0a0a"; // Silhouette color (Darker than sky, lighter than ground)
+        this.ctx.fillStyle = "#0a0a0a"; 
         
         if (dir === castleDir) {
             // --- CASTLE (Goal) ---
@@ -54,10 +54,9 @@ export class Renderer {
         } 
         else if (dir === 'E') {
             // --- FOREST (East) ---
-            // Draw simple pine trees
             this.ctx.beginPath();
             [ -100, -40, 20, 90 ].forEach(offset => {
-                let h = 40 + (Math.random() * 20); // Random height variance visual
+                let h = 40 + (Math.random() * 20); 
                 let x = cx + offset;
                 this.ctx.moveTo(x, cy);
                 this.ctx.lineTo(x - 10, cy);
@@ -79,12 +78,10 @@ export class Renderer {
         }
         else if (dir === 'S') {
             // --- GRAVEYARD (South) ---
-            // Small tombstones
             [ -80, -20, 50, 120 ].forEach(offset => {
                 let x = cx + offset;
-                this.ctx.fillRect(x, cy - 15, 10, 15); // Stone
-                this.ctx.fillRect(x - 5, cy - 25, 20, 5); // Cross bar? Or just boxy stones
-                // Cross shape
+                this.ctx.fillRect(x, cy - 15, 10, 15); 
+                this.ctx.fillRect(x - 5, cy - 25, 20, 5); 
                 this.ctx.fillRect(x + 2, cy - 30, 6, 30);
                 this.ctx.fillRect(x - 5, cy - 20, 20, 6);
             });
@@ -94,32 +91,23 @@ export class Renderer {
     }
 
     drawDarkness(x, y, radius, recoil, lightLevel = 0, flareActive = false) {
-        if (flareActive) return; // SKIP DARKNESS IF FLARE IS ON
+        if (flareActive) return; 
 
         this.ctx.save();
         
-        // 1. Define the Shape: A screen-sized rectangle...
         this.ctx.beginPath();
         this.ctx.rect(0, 0, this.width, this.height);
-        
-        // 2. ...minus the Scope Circle (drawn counter-clockwise to create a hole)
         this.ctx.arc(x, y - recoil, radius, 0, Math.PI * 2, true);
         
-        // 3. Fill the shape. The "hole" will remain transparent.
         this.ctx.fillStyle = "black";
         this.ctx.fill();
 
-        // 4. Draw the Flashlight Tint (If unlocked)
         if (lightLevel > 0) {
             let lightRadius = radius + (lightLevel * 60);
-            
             this.ctx.beginPath();
-            // Outer edge of flashlight (Clockwise)
             this.ctx.arc(x, y - recoil, lightRadius, 0, Math.PI * 2, false);
-            // Inner edge of flashlight (Counter-Clockwise hole)
             this.ctx.arc(x, y - recoil, radius, 0, Math.PI * 2, true);
-            
-            this.ctx.fillStyle = "rgba(0, 0, 0, 0.6)"; // Dim gray
+            this.ctx.fillStyle = "rgba(0, 0, 0, 0.6)"; 
             this.ctx.fill();
         }
 
@@ -127,13 +115,11 @@ export class Renderer {
     }
 
     drawEnemyGuides(enemies, currentDirIndex, directions, aim, radius, flareActive = false) {
-        // If flare is active, we don't need guides because you can see everything
-        // But we'll keep them subtle just in case
-        
+        if (flareActive) return; 
+
         this.ctx.save();
         this.ctx.beginPath(); 
         
-        // Create the "Hole" clipping mask (Everything BUT the circle)
         this.ctx.rect(0, 0, this.width, this.height); 
         this.ctx.arc(aim.x, aim.y, radius, 0, Math.PI*2, true); 
         this.ctx.clip(); 
@@ -147,15 +133,24 @@ export class Renderer {
                 let dy = drawY - aim.y;
                 let distToCenter = Math.hypot(dx, dy);
 
-                if (distToCenter < radius * 1.1) return; // Hide if in scope
+                if (distToCenter < radius * 1.1) return; 
 
-                let intensity = 0;
-                if (e.distance < 100) intensity = 1 - (e.distance / 100);
-                intensity = Math.pow(intensity, 2); 
+                // --- REVERSED LOGIC HERE ---
+                // Old: 1 - (e.distance / 100) -> Close was Bright
+                // New: (e.distance / 100) -> Far is Bright
+                let intensity = (e.distance / 100); 
+                
+                // Keep it at least a little visible when fairly close, but fade out at very close
+                if (intensity < 0.1) intensity = 0.1;
 
-                if (intensity > 0.05) {
+                // Square it so it stays bright for longer at distance, then drops off
+                intensity = Math.pow(intensity, 0.8); 
+
+                if (intensity > 0.1) {
                     let nx = dx / distToCenter;
                     let ny = dy / distToCenter;
+                    
+                    // Length also scales with distance now (Far = Long line)
                     let lineLength = 10 + (80 * intensity); 
                     let startOffset = radius + 5; 
 
@@ -175,14 +170,12 @@ export class Renderer {
         const rx = aimX; 
         const ry = aimY - recoilY; 
 
-        // 1. Thick Green Ring
         this.ctx.strokeStyle = "#002200"; 
         this.ctx.lineWidth = 10;
         this.ctx.beginPath(); 
         this.ctx.arc(rx, ry, radius, 0, Math.PI*2); 
         this.ctx.stroke();
 
-        // 2. Lock-on Highlight (Yellow Outer Glow)
         if (isLocked) {
             this.ctx.save();
             this.ctx.shadowBlur = 15; 
@@ -195,14 +188,12 @@ export class Renderer {
             this.ctx.restore();
         }
 
-        // 3. Thin Inner Ring
         this.ctx.strokeStyle = "#0f0"; 
         this.ctx.lineWidth = 1;
         this.ctx.beginPath(); 
         this.ctx.arc(rx, ry, radius - 5, 0, Math.PI*2); 
         this.ctx.stroke();
 
-        // 4. Crosshairs
         this.ctx.strokeStyle = isLocked ? "yellow" : "rgba(255, 0, 0, 0.9)";
         this.ctx.lineWidth = 1;
         this.ctx.beginPath();

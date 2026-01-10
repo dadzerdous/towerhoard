@@ -50,8 +50,15 @@ let state = {
     turrets: { 'N': false, 'E': false, 'S': false, 'W': false },
     turretTimer: 0, gameOver: false,
     currentWeapon: 'rifle', lastShotTime: 0, recoilY: 0,
-    targetLocked: false
+    targetLocked: false,
+    // CASTLE LOGIC
+    castleDir: 'N', // Randomize later if needed
+    castleProgress: 0 
 };
+
+// Pick random castle direction on load
+state.castleDir = state.directions[Math.floor(Math.random() * 4)];
+console.log("Castle is to the: " + state.castleDir);
 
 const input = new InputHandler(canvas);
 
@@ -61,23 +68,57 @@ document.getElementById('nav-down').addEventListener('click', () => turn(2));
 canvas.addEventListener('mousedown', shoot);
 canvas.addEventListener('touchend', shoot);
 
+// --- STORY FUNCTIONS ---
 window.startStoryMode = () => { AudioMgr.playSelect(); document.getElementById('start-screen').style.display = 'none'; state.gameStarted = true; showHaiku(0); };
 window.dismissStory = () => { AudioMgr.playSelect(); document.getElementById('story-overlay').style.display = 'none'; state.storyOpen = false; state.waveActive = true; };
+window.skipStoryTypewriter = () => {
+    // Instantly show all text and button
+    document.querySelectorAll('.haiku-line').forEach(el => el.style.opacity = 1);
+    document.getElementById('story-continue-btn').style.display = 'block';
+};
 
 function showHaiku(waveIndex) {
     state.storyOpen = true; state.waveActive = false;
     const overlay = document.getElementById('story-overlay');
     const lines = HAIKUS[Math.min(waveIndex, HAIKUS.length - 1)]; 
-    document.getElementById('line1').innerText = lines[0]; document.getElementById('line2').innerText = lines[1]; document.getElementById('line3').innerText = lines[2];
+    document.getElementById('line1').innerText = lines[0]; 
+    document.getElementById('line2').innerText = lines[1]; 
+    document.getElementById('line3').innerText = lines[2];
+    document.getElementById('story-continue-btn').style.display = 'none'; // Hide btn initially
+    
+    // Reset fade animations
+    document.querySelectorAll('.haiku-line').forEach((el, i) => {
+        el.style.opacity = 0;
+        // Simple timeout to fade in (replacing CSS anim for control)
+        setTimeout(() => el.style.opacity = 1, 500 + (i * 1000));
+    });
+    
+    // Show button after 3.5s
+    setTimeout(() => { 
+        if(state.storyOpen) document.getElementById('story-continue-btn').style.display = 'block'; 
+    }, 3500);
+    
     overlay.style.display = 'flex';
-    document.querySelectorAll('.haiku-line').forEach(el => { el.style.animation = 'none'; el.offsetHeight; el.style.animation = null; });
 }
 
+// --- SHOP TABS ---
+window.switchTab = (tabName) => {
+    AudioMgr.playSelect();
+    // Hide all tabs
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    // Show select
+    document.getElementById(`tab-${tabName}`).classList.add('active');
+    // Highlight button
+    // (Simple way: Loop and find button with text)
+    // For now, just relying on click
+};
+
+// --- WEAPON UI ---
 window.toggleWeaponMenu = () => {
     AudioMgr.playSelect();
     const list = document.getElementById('weapon-list');
     list.classList.toggle('open');
-    // SYNC HIGHLIGHT WHEN OPENING
     if (list.classList.contains('open')) {
         document.querySelectorAll('.weapon-slot').forEach(el => el.classList.remove('active'));
         const el = document.getElementById(`slot-${state.currentWeapon}`);
@@ -101,12 +142,45 @@ window.buyWeapon = (id) => {
         AudioMgr.playSelect(); player.xp -= cost; player.unlockedWeapons.push(id); saveGame(); updateWeaponUI();
     }
 };
-window.buyUpgrade = (type) => { if (type === 'damage' && player.xp >= COST_DAMAGE) { AudioMgr.playSelect(); player.xp -= COST_DAMAGE; player.stats.damage++; saveGame(); }};
-window.buyTurret = () => { let currentDir = state.directions[state.dirIndex]; if (!state.turrets[currentDir] && state.gold >= COST_TURRET) { AudioMgr.playSelect(); state.gold -= COST_TURRET; state.turrets[currentDir] = true; updateNavLabels(); updateShopButtons(); }};
-window.nextWave = () => { AudioMgr.playSelect(); document.getElementById('shop-overlay').style.display = 'none'; state.shopOpen = false; startNextWave(); };
 
-function startNextWave() { state.wave++; state.enemiesSpawned = 0; state.enemiesToSpawn = 10 + (state.wave * 2); state.enemies = []; showHaiku(state.wave - 1); saveGame(); }
-function turn(dirChange) { state.dirIndex = (state.dirIndex + dirChange + 4) % 4; updateNavLabels(); if (state.shopOpen) updateShopButtons(); }
+window.buyUpgrade = (type) => { 
+    if (type === 'damage' && player.xp >= COST_DAMAGE) { 
+        AudioMgr.playSelect(); player.xp -= COST_DAMAGE; player.stats.damage++; saveGame(); 
+    }
+};
+
+// MODIFIED: Directional Turret Buy
+window.buyTurret = (dir) => { 
+    if (!state.turrets[dir] && state.gold >= COST_TURRET) { 
+        AudioMgr.playSelect(); 
+        state.gold -= COST_TURRET; 
+        state.turrets[dir] = true; 
+        updateNavLabels(); 
+        updateShopButtons(); 
+    }
+};
+
+window.nextWave = () => {
+    AudioMgr.playSelect();
+    document.getElementById('shop-overlay').style.display = 'none';
+    state.shopOpen = false;
+    startNextWave();
+};
+
+function startNextWave() {
+    state.wave++;
+    state.enemiesSpawned = 0;
+    state.enemiesToSpawn = 10 + (state.wave * 2); 
+    state.enemies = [];
+    showHaiku(state.wave - 1);
+    saveGame();
+}
+
+function turn(dirChange) {
+    state.dirIndex = (state.dirIndex + dirChange + 4) % 4;
+    updateNavLabels();
+    if (state.shopOpen) updateShopButtons();
+}
 
 function shoot() {
     if (!state.gameStarted || state.storyOpen || state.gameOver || !state.waveActive || state.shopOpen) return;
@@ -142,7 +216,7 @@ function checkHit(x, y, dmg, isPlayer, radiusMult = 1.0) {
 
         if (hit) {
             e.hp -= dmg; 
-            AudioMgr.playThud(); // HIT SOUND
+            AudioMgr.playThud(); 
             if (e.hp <= 0) {
                 spawnExplosion(e.x, drawY, e.color);
                 state.enemies.splice(i, 1);
@@ -195,32 +269,57 @@ function fireTurrets() {
     });
 }
 
-// Visual Helpers
 function spawnFloatingText(text, x, y, color) { state.particles.push({ type: 0, text, x, y, life: 1.0, color, vy: -1, vx: 0 }); }
 function spawnExplosion(x, y, color) { for(let k=0; k<15; k++) { state.particles.push({ type: 1, x, y, life: 1.0, color, vx: (Math.random() - 0.5) * 10, vy: (Math.random() - 0.5) * 10 }); }}
-function openShop() { state.shopOpen = true; document.getElementById('shop-overlay').style.display = 'flex'; document.getElementById('btn-damage').innerText = `${COST_DAMAGE} XP`; updateShopButtons(); updateWeaponUI(); }
+function openShop() { 
+    state.shopOpen = true; 
+    document.getElementById('shop-overlay').style.display = 'flex'; 
+    document.getElementById('btn-damage').innerText = `${COST_DAMAGE} XP`; 
+    
+    // Check Castle Progression Logic
+    const currentDir = state.directions[state.dirIndex];
+    if (currentDir === state.castleDir) {
+        state.castleProgress++;
+        spawnFloatingText("PROGRESS!", renderer.width/2, renderer.height/2, "yellow");
+    }
+
+    updateShopButtons(); 
+    updateWeaponUI(); 
+    window.switchTab('weapons'); // Default tab
+}
 function updateWeaponUI() { if (!player.unlockedWeapons) return; player.unlockedWeapons.forEach(id => { const el = document.getElementById(`slot-${id}`); if(el) el.classList.remove('locked'); }); if(player.unlockedWeapons.includes('shotgun')) document.getElementById('shop-shotgun').style.display = 'none'; if(player.unlockedWeapons.includes('sniper')) document.getElementById('shop-sniper').style.display = 'none'; }
-function updateShopButtons() { let currentDir = state.directions[state.dirIndex]; const btn = document.getElementById('btn-turret'); if (state.turrets[currentDir]) { btn.innerText = "OWNED"; btn.disabled = true; btn.style.color = "#888"; btn.style.borderColor = "#888"; } else { btn.innerText = `${COST_TURRET} G`; btn.disabled = false; btn.style.color = "#0f0"; btn.style.borderColor = "#0f0"; } }
+function updateShopButtons() { 
+    // Update all turret buttons status
+    ['N','E','S','W'].forEach(dir => {
+        const btn = document.getElementById(`btn-turret-${dir}`);
+        if(btn) {
+            if (state.turrets[dir]) { btn.innerText = "OWNED"; btn.disabled = true; btn.style.color = "#888"; btn.style.borderColor = "#888"; } 
+            else { btn.innerText = `${COST_TURRET} G`; btn.disabled = false; btn.style.color = "#0f0"; btn.style.borderColor = "#0f0"; }
+        }
+    });
+}
 function updateNavLabels() { let cur = state.directions[state.dirIndex]; const getIcon = (dir) => state.turrets[dir] ? "🤖" : ""; document.getElementById('current-dir').innerHTML = cur + (state.turrets[cur] ? " <span style='font-size:20px'>🤖</span>" : ""); const leftIndex = (state.dirIndex + 3) % 4; const rightIndex = (state.dirIndex + 1) % 4; const backIndex = (state.dirIndex + 2) % 4; document.getElementById('nav-left').innerText = state.directions[leftIndex] + getIcon(state.directions[leftIndex]); document.getElementById('nav-right').innerText = state.directions[rightIndex] + getIcon(state.directions[rightIndex]); document.getElementById('nav-down').innerText = state.directions[backIndex] + getIcon(state.directions[backIndex]); }
 function saveGame() { player.highWave = Math.max(player.highWave, state.wave); Storage.save(player); }
 
 // TRIGGER DAMAGE VISUALS
 function triggerDamageFeedback(enemyDir) {
-    renderer.triggerDamageFlash(); // FLASH SCREEN
-    // Flash specific indicator
+    renderer.triggerDamageFlash(); 
     let diff = state.directions.indexOf(enemyDir) - state.dirIndex;
     if (diff === -3) diff = 1; if (diff === 3) diff = -1; 
     let el = null;
     if (diff === 1) el = document.getElementById('danger-right');
     else if (diff === -1) el = document.getElementById('danger-left');
     else if (Math.abs(diff) === 2) el = document.getElementById('danger-behind');
-    
     if(el) {
-        el.style.opacity = 1.0; 
-        el.style.transition = 'none'; // Instant on
-        setTimeout(() => el.style.transition = 'opacity 0.2s', 50); // Restore fade
+        el.style.opacity = 1.0; el.style.transition = 'none'; 
+        setTimeout(() => el.style.transition = 'opacity 0.2s', 50); 
     }
 }
+
+// --- DEV CHEATS ---
+window.devToggleSkill = (skill) => { console.log("Dev Cheat: " + skill); };
+window.devAddGold = () => { state.gold += 1000; updateUI(); };
+window.devAddXP = () => { player.xp += 1000; updateUI(); };
 
 // --- MAIN LOOP ---
 let lastTime = 0;
@@ -239,6 +338,12 @@ function gameLoop(timestamp) {
     }
 
     renderer.clear();
+    
+    // DRAW CASTLE
+    const currentDir = state.directions[state.dirIndex];
+    if (currentDir === state.castleDir) {
+        renderer.drawCastle(state.castleProgress, true);
+    }
 
     if (state.gameOver) {
         renderer.drawGameOver(state.towerHp <= 0);
@@ -272,8 +377,7 @@ function gameLoop(timestamp) {
             let currentDir = state.directions[state.dirIndex];
             state.towerHp -= 10;
             spawnFloatingText("-10 TOWER", renderer.width/2, renderer.height/2 - 20, "orange");
-            triggerDamageFeedback(enemyDir); // NEW: Flash red
-            
+            triggerDamageFeedback(enemyDir); 
             if (enemyDir !== currentDir) {
                 state.playerHp -= 10; 
                 spawnFloatingText("-10 HP", renderer.width/2, renderer.height/2 + 30, "red");
@@ -287,17 +391,12 @@ function gameLoop(timestamp) {
     }
 
     renderer.drawParticles(state.particles);
-    // Note: We changed how indicators update, they are now managed by renderer.updateIndicators mainly, 
-    // but triggerDamageFeedback overrides them briefly.
     renderer.updateIndicators(state.enemies, state.dirIndex, state.directions);
     renderer.updateUI(player, state, state.enemiesToSpawn);
     
-    // NEW: Pass state.targetLocked to guide lines if we want them to glow too?
-    // Actually we pass aim to drawEnemyGuides to avoid drawing lines inside scope
     const aim = input.getAim();
     const weaponScale = WEAPONS[state.currentWeapon].scopeScale || 1.0;
     
-    // DRAW YELLOW LINES (Behind Scope)
     renderer.drawEnemyGuides(state.enemies, state.dirIndex, state.directions, aim, player.stats.scopeSize * weaponScale);
 
     if (state.recoilY > 0) state.recoilY *= 0.8; 

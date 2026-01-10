@@ -93,41 +93,42 @@ export class Renderer {
         this.ctx.restore();
     }
 
-drawDarkness(x, y, radius, recoil, lightLevel = 0) {
-    this.ctx.save();
-    
-    // 1. Define the Shape: A screen-sized rectangle...
-    this.ctx.beginPath();
-    this.ctx.rect(0, 0, this.width, this.height);
-    
-    // 2. ...minus the Scope Circle (drawn counter-clockwise to create a hole)
-    // The 'true' at the end is vital—it reverses the drawing direction
-    this.ctx.arc(x, y - recoil, radius, 0, Math.PI * 2, true);
-    
-    // 3. Fill the shape. The "hole" will remain transparent, showing the game world.
-    this.ctx.fillStyle = "black";
-    this.ctx.fill();
+    drawDarkness(x, y, radius, recoil, lightLevel = 0, flareActive = false) {
+        if (flareActive) return; // SKIP DARKNESS IF FLARE IS ON
 
-    // 4. Draw the Flashlight Tint (If unlocked)
-    if (lightLevel > 0) {
-        let lightRadius = radius + (lightLevel * 60);
+        this.ctx.save();
         
+        // 1. Define the Shape: A screen-sized rectangle...
         this.ctx.beginPath();
-        // Outer edge of flashlight (Clockwise)
-        this.ctx.arc(x, y - recoil, lightRadius, 0, Math.PI * 2, false);
-        // Inner edge of flashlight (Counter-Clockwise hole)
+        this.ctx.rect(0, 0, this.width, this.height);
+        
+        // 2. ...minus the Scope Circle (drawn counter-clockwise to create a hole)
         this.ctx.arc(x, y - recoil, radius, 0, Math.PI * 2, true);
         
-        this.ctx.fillStyle = "rgba(0, 0, 0, 0.6)"; // Dim gray
+        // 3. Fill the shape. The "hole" will remain transparent.
+        this.ctx.fillStyle = "black";
         this.ctx.fill();
+
+        // 4. Draw the Flashlight Tint (If unlocked)
+        if (lightLevel > 0) {
+            let lightRadius = radius + (lightLevel * 60);
+            
+            this.ctx.beginPath();
+            // Outer edge of flashlight (Clockwise)
+            this.ctx.arc(x, y - recoil, lightRadius, 0, Math.PI * 2, false);
+            // Inner edge of flashlight (Counter-Clockwise hole)
+            this.ctx.arc(x, y - recoil, radius, 0, Math.PI * 2, true);
+            
+            this.ctx.fillStyle = "rgba(0, 0, 0, 0.6)"; // Dim gray
+            this.ctx.fill();
+        }
+
+        this.ctx.restore();
     }
 
-    this.ctx.restore();
-}
-
-drawEnemyGuides(enemies, currentDirIndex, directions, aim, radius) {
-        // REMOVED: const scopeRadius = (this.height * 0.17) * scopeSize;
-        // The 'radius' passed in is already the correct size in pixels.
+    drawEnemyGuides(enemies, currentDirIndex, directions, aim, radius, flareActive = false) {
+        // If flare is active, we don't need guides because you can see everything
+        // But we'll keep them subtle just in case
         
         this.ctx.save();
         this.ctx.beginPath(); 
@@ -170,10 +171,7 @@ drawEnemyGuides(enemies, currentDirIndex, directions, aim, radius) {
         this.ctx.restore();
     }
 
-drawScopeUI(aimX, aimY, radius, recoilY, isLocked) {
-        // REMOVED: const radius = (this.height * 0.17) * scopeSize;
-        // Use 'radius' directly from arguments
-        
+    drawScopeUI(aimX, aimY, radius, recoilY, isLocked) {
         const rx = aimX; 
         const ry = aimY - recoilY; 
 

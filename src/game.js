@@ -19,16 +19,12 @@ const WEAPONS = {
     sniper: { name: "50 Cal", damageMult: 5, cooldown: 1500, recoil: 60, scopeScale: 0.8 }
 };
 const defaultStats = { 
-    xp: 0, 
-    level: 1, 
-    highWave: 1, 
+    xp: 0, level: 1, highWave: 1, 
     unlockedWeapons: ['rifle'], 
-    stats: { 
-        damage: 1, 
-        scopeSize: 1.0, 
-        reloadSpeed: 1.0, // New: Starts at 100% speed
-        lightLevel: 0     // New: Starts with no extra light
-    } 
+    stats: { damage: 1, scopeSize: 1.0, reloadSpeed: 1.0, lightLevel: 0 },
+    // NEW TRACKING DATA
+    totalKills: 0,
+    bestiary: {} // Will look like { "basic": 50, "tank": 2 }
 };
 
 let savedData = Storage.load();

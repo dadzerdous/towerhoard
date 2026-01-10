@@ -25,51 +25,34 @@ export class Renderer {
 
     drawCastle(progress, isActiveDirection) {
         if (!isActiveDirection) return;
-
-        const cx = this.width / 2;
-        const cy = this.height / 2;
-        
-        // VISIBILITY FIX: Increased size and contrast
+        const cx = this.width / 2; const cy = this.height / 2;
         const size = 15 + (progress * 20); 
-        
         this.ctx.save();
-        this.ctx.fillStyle = "#000"; // Pure Black (Matches ground)
-        this.ctx.strokeStyle = "#222"; // Subtle outline
-        
+        this.ctx.fillStyle = "#000"; 
+        this.ctx.strokeStyle = "#222"; 
         this.ctx.beginPath();
         if (progress < 1) {
-            // Foundation
             this.ctx.fillRect(cx - 15, cy - 10, 30, 10);
         } else if (progress < 3) {
-            // House
             this.ctx.fillRect(cx - size/2, cy - size, size, size);
-            this.ctx.moveTo(cx - size/2, cy - size);
-            this.ctx.lineTo(cx, cy - size - (size/2));
-            this.ctx.lineTo(cx + size/2, cy - size);
+            this.ctx.moveTo(cx - size/2, cy - size); this.ctx.lineTo(cx, cy - size - (size/2)); this.ctx.lineTo(cx + size/2, cy - size);
         } else {
-            // Castle
             this.ctx.fillRect(cx - size, cy - size/2, size*2, size/2); 
             this.ctx.fillRect(cx - size, cy - size, size/3, size); 
             this.ctx.fillRect(cx + size*0.66, cy - size, size/3, size); 
         }
-        this.ctx.stroke();
-        this.ctx.fill();
+        this.ctx.stroke(); this.ctx.fill();
         this.ctx.restore();
     }
 
     drawDarkness(aimX, aimY, scopeSize, recoilY) {
         const radius = (this.height * 0.17) * scopeSize;
         const rx = aimX; const ry = aimY - recoilY; 
-
         this.ctx.save();
-        this.ctx.beginPath(); 
-        this.ctx.rect(0, 0, this.width, this.height); 
+        this.ctx.beginPath(); this.ctx.rect(0, 0, this.width, this.height); 
         this.ctx.arc(rx, ry, radius, 0, Math.PI*2, true); 
         this.ctx.clip();
-        
-        this.ctx.fillStyle = "#000"; 
-        this.ctx.fillRect(0, 0, this.width, this.height);
-
+        this.ctx.fillStyle = "#000"; this.ctx.fillRect(0, 0, this.width, this.height);
         if (this.damageFlashTimer > 0) {
             this.ctx.fillStyle = `rgba(255, 0, 0, ${this.damageFlashTimer * 0.3})`;
             this.ctx.fillRect(0, 0, this.width, this.height);
@@ -78,48 +61,42 @@ export class Renderer {
         this.ctx.restore();
     }
 
+    // UPDATED YELLOW LINE
     drawEnemyGuides(enemies, currentDirIndex, directions, aim, scopeSize) {
         const scopeRadius = (this.height * 0.17) * scopeSize;
         
         this.ctx.save();
-        
-        // CLIP: Still protect the inside
-        this.ctx.beginPath();
-        this.ctx.rect(0, 0, this.width, this.height); 
+        this.ctx.beginPath(); this.ctx.rect(0, 0, this.width, this.height); 
         this.ctx.arc(aim.x, aim.y, scopeRadius, 0, Math.PI*2, true); 
-        this.ctx.clip();
+        this.ctx.clip(); // Mask
 
-        this.ctx.shadowBlur = 10; 
-        this.ctx.shadowColor = "#ffff00"; 
+        this.ctx.shadowBlur = 10; this.ctx.shadowColor = "#ffff00"; 
 
         enemies.forEach(e => {
             if (e.view === directions[currentDirIndex] && e.distance > 0) {
-                
                 let drawY = e.y + ((100 - e.distance) * (this.height/300));
                 let dx = e.x - aim.x;
                 let dy = drawY - aim.y;
                 let distToCenter = Math.hypot(dx, dy);
 
-                // LOGIC FIX: If enemy overlaps scope, DO NOT DRAW LINE
-                // We assume scope radius ~ 90% tolerance for visual overlap
-                if (distToCenter < scopeRadius * 1.2) return; 
+                // Hide if inside scope (Handoff to Halo)
+                if (distToCenter < scopeRadius * 1.1) return; 
 
-                // Intensity: Starts very dim at 100 distance, stronger at 50
+                // Dynamic Length based on closeness (Z-Depth)
                 let intensity = 0;
                 if (e.distance < 100) intensity = 1 - (e.distance / 100);
-                // Curve it so it stays dim longer
                 intensity = Math.pow(intensity, 2); 
 
-                if (intensity > 0.1) {
+                if (intensity > 0.05) {
                     let nx = dx / distToCenter;
                     let ny = dy / distToCenter;
-
-                    // Line grows from scope outward
-                    let lineLength = 10 + (60 * intensity); 
+                    
+                    // Line grows as it gets closer
+                    let lineLength = 10 + (80 * intensity); 
                     let startOffset = scopeRadius + 5; 
 
-                    this.ctx.strokeStyle = `rgba(255, 255, 0, ${intensity * 0.8})`; 
-                    this.ctx.lineWidth = 2 + (2 * intensity); // Thicker as it gets closer
+                    this.ctx.strokeStyle = `rgba(255, 255, 0, ${intensity})`; 
+                    this.ctx.lineWidth = 2 + (2 * intensity); 
                     this.ctx.beginPath();
                     this.ctx.moveTo(aim.x + (nx * startOffset), aim.y + (ny * startOffset)); 
                     this.ctx.lineTo(aim.x + (nx * (startOffset + lineLength)), aim.y + (ny * (startOffset + lineLength))); 
@@ -127,7 +104,6 @@ export class Renderer {
                 }
             }
         });
-        
         this.ctx.restore();
     }
 
@@ -135,34 +111,20 @@ export class Renderer {
         const radius = (this.height * 0.17) * scopeSize;
         const rx = aimX; const ry = aimY - recoilY; 
 
-        // Outer Rim
-        this.ctx.strokeStyle = "#002200"; 
-        this.ctx.lineWidth = 10;
-        this.ctx.beginPath(); 
-        this.ctx.arc(rx, ry, radius, 0, Math.PI*2); 
-        this.ctx.stroke();
+        this.ctx.strokeStyle = "#002200"; this.ctx.lineWidth = 10;
+        this.ctx.beginPath(); this.ctx.arc(rx, ry, radius, 0, Math.PI*2); this.ctx.stroke();
 
-        // Target Lock Halo
         if (isLocked) {
             this.ctx.save();
-            this.ctx.shadowBlur = 15;
-            this.ctx.shadowColor = "yellow";
-            this.ctx.strokeStyle = "rgba(255, 255, 0, 0.9)"; 
-            this.ctx.lineWidth = 6;
-            this.ctx.beginPath(); 
-            this.ctx.arc(rx, ry, radius + 8, 0, Math.PI*2); 
-            this.ctx.stroke();
+            this.ctx.shadowBlur = 15; this.ctx.shadowColor = "yellow";
+            this.ctx.strokeStyle = "rgba(255, 255, 0, 0.9)"; this.ctx.lineWidth = 6;
+            this.ctx.beginPath(); this.ctx.arc(rx, ry, radius + 8, 0, Math.PI*2); this.ctx.stroke();
             this.ctx.restore();
         }
 
-        // Inner Green Line
-        this.ctx.strokeStyle = "#0f0"; 
-        this.ctx.lineWidth = 1;
-        this.ctx.beginPath(); 
-        this.ctx.arc(rx, ry, radius - 5, 0, Math.PI*2); 
-        this.ctx.stroke();
+        this.ctx.strokeStyle = "#0f0"; this.ctx.lineWidth = 1;
+        this.ctx.beginPath(); this.ctx.arc(rx, ry, radius - 5, 0, Math.PI*2); this.ctx.stroke();
 
-        // Crosshair
         this.ctx.strokeStyle = isLocked ? "yellow" : "rgba(255, 0, 0, 0.9)";
         this.ctx.lineWidth = 1;
         this.ctx.beginPath();

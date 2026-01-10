@@ -94,29 +94,32 @@ export class Renderer {
     }
 
     drawDarkness(x, y, radius, recoil, lightLevel = 0) {
-    // 1. Calculate Flashlight Radius (If you have the upgrade)
-    // If no light, the "outer" darkness starts right at the scope edge.
-    // If light > 0, the "outer" darkness is pushed back.
-    let outerRadius = radius + (lightLevel * 60);
+    this.ctx.save();
 
-    // --- LAYER 1: SOLID PITCH BLACKNESS ---
-    // Draws a black screen with a hole size of 'outerRadius'
+    // 1. Fill the entire screen with solid black
+    this.ctx.globalCompositeOperation = 'source-over';
     this.ctx.fillStyle = "black";
+    this.ctx.fillRect(0, 0, this.width, this.height);
+
+    // 2. "Erase" the main scope circle (Make it transparent)
+    this.ctx.globalCompositeOperation = 'destination-out';
     this.ctx.beginPath();
-    this.ctx.rect(0, 0, this.width, this.height); // Clockwise Rect
-    this.ctx.arc(x, y - recoil, outerRadius, 0, Math.PI * 2, true); // Counter-Clockwise Arc (Hole)
+    this.ctx.arc(x, y - recoil, radius, 0, Math.PI * 2);
     this.ctx.fill();
 
-    // --- LAYER 2: FLASHLIGHT DIMNESS (The Gray Ring) ---
-    // Only draws if we have a flashlight upgrade (lightLevel > 0)
-    // Draws a semi-transparent ring between the Scope and the Pitch Blackness
+    // 3. "Erase" the Flashlight Ring (Partially transparent)
     if (lightLevel > 0) {
-        this.ctx.fillStyle = "rgba(0, 0, 0, 0.6)"; // 60% Darkness (Dim)
+        let lightRadius = radius + (lightLevel * 60);
+        
+        // We use a lower alpha to only erase *some* of the black
+        this.ctx.fillStyle = "rgba(0, 0, 0, 0.4)"; 
         this.ctx.beginPath();
-        this.ctx.arc(x, y - recoil, outerRadius, 0, Math.PI * 2, false); // Outer Circle
-        this.ctx.arc(x, y - recoil, radius, 0, Math.PI * 2, true); // Inner Hole (Scope)
+        // Draw the ring (Outer circle minus inner circle)
+        this.ctx.arc(x, y - recoil, lightRadius, 0, Math.PI * 2);
         this.ctx.fill();
     }
+
+    this.ctx.restore();
 }
 
     drawEnemyGuides(enemies, currentDirIndex, directions, aim, scopeSize) {

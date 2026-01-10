@@ -1,8 +1,8 @@
 import { Enemy } from './enemies.js';
 import { InputHandler } from './input.js';
 import { Storage } from './storage.js';
-import { Renderer } from './renderer.js'; // NEW
-import { AudioMgr } from './audio.js';    // NEW
+import { Renderer } from './renderer.js';
+import { AudioMgr } from './audio.js';
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -13,13 +13,15 @@ window.addEventListener('resize', () => {
     renderer.resize(window.innerWidth, window.innerHeight);
 });
 renderer.resize(window.innerWidth, window.innerHeight);
+
 const COST_DAMAGE = 100;
 const COST_TURRET = 100;
 
+// ADDED: scopeScale logic
 const WEAPONS = {
-    rifle: { name: "Rifle", damageMult: 1, cooldown: 0, recoil: 15 },
-    shotgun: { name: "Shotgun", damageMult: 0.5, cooldown: 800, recoil: 80 },
-    sniper: { name: "50 Cal", damageMult: 5, cooldown: 1500, recoil: 60 }
+    rifle: { name: "Rifle", damageMult: 1, cooldown: 0, recoil: 15, scopeScale: 1.0 },
+    shotgun: { name: "Shotgun", damageMult: 0.5, cooldown: 800, recoil: 80, scopeScale: 1.3 }, // WIDE SCOPE
+    sniper: { name: "50 Cal", damageMult: 5, cooldown: 1500, recoil: 60, scopeScale: 0.8 }   // TIGHT SCOPE
 };
 
 const defaultStats = {
@@ -99,7 +101,6 @@ function turn(dirChange) {
     state.dirIndex = (state.dirIndex + dirChange + 4) % 4;
     updateNavLabels();
     if (state.shopOpen) updateShopButtons();
-    // Visual flash is handled by render loop now, but we can clear briefly
 }
 
 function shoot() {
@@ -110,10 +111,10 @@ function shoot() {
     if (now - state.lastShotTime < weapon.cooldown) return;
 
     state.lastShotTime = now;
-    AudioMgr.playShoot(); // Using new Audio Manager
+    AudioMgr.playShoot(); 
 
     state.recoilY = weapon.recoil;
-    renderer.drawMuzzleFlash(); // Using Renderer
+    renderer.drawMuzzleFlash(); 
 
     const aim = input.getAim();
     let baseDmg = player.stats.damage;
@@ -134,18 +135,20 @@ function checkHit(x, y, dmg, isPlayer, radiusMult = 1.0) {
 
         let scale = (100 - e.distance) / 10;
         let drawY = e.y + ((100 - e.distance) * (canvas.height/300));
-        let size = (30 * scale) * radiusMult; 
+        
+        // HITBOX FIX: Drastically reduced base size from 30 to 6
+        // This requires precise aiming near the center (crosshair)
+        let size = (6 * scale) * radiusMult; 
         
         let hit = false;
         if (isPlayer) {
             let dist = Math.hypot(e.x - x, drawY - y);
             if (dist < size) hit = true;
-        } else { hit = true; } // Auto-hit for turrets
+        } else { hit = true; } 
 
         if (hit) {
             e.hp -= dmg; 
             if (e.hp <= 0) {
-                // Kill Rewards
                 spawnExplosion(e.x, drawY, isPlayer ? "#f00" : "#0f0");
                 state.enemies.splice(i, 1);
                 player.xp += e.xpValue;
@@ -153,9 +156,6 @@ function checkHit(x, y, dmg, isPlayer, radiusMult = 1.0) {
                 spawnFloatingText(`+${e.xpValue}XP`, e.x, drawY - 20, "#0ff");
                 spawnFloatingText(`+$10`, e.x, drawY - 40, "#ff0");
                 saveGame();
-            } else if (isPlayer) {
-                // Hit Flash (Visual only, no logic)
-                // We could ask renderer to draw a hit marker here
             }
             
             hitCount++;
@@ -271,7 +271,6 @@ function gameLoop(timestamp) {
         return; 
     }
 
-    // 1. RENDER BACKGROUND
     renderer.clear();
 
     if (state.gameOver) {
@@ -279,7 +278,6 @@ function gameLoop(timestamp) {
         return;
     }
 
-    // 2. LOGIC: SPAWN & TURRETS
     if (state.waveActive) {
         if (state.enemiesSpawned < state.enemiesToSpawn) {
             spawnTimer += dt;
@@ -301,14 +299,12 @@ function gameLoop(timestamp) {
         }
     }
 
-    // 3. LOGIC: ENEMIES
     state.enemies.sort((a, b) => b.distance - a.distance);
     
     for (let i = state.enemies.length - 1; i >= 0; i--) {
         let e = state.enemies[i];
         e.update();
         
-        // Damage Logic
         if (e.distance <= 0) {
             let enemyDir = e.view;
             let currentDir = state.directions[state.dirIndex];
@@ -322,26 +318,24 @@ function gameLoop(timestamp) {
             if (state.towerHp <= 0 || state.playerHp <= 0) state.gameOver = true;
         }
 
-        // Draw Logic (Delegated to Enemy class)
         if (e.view === state.directions[state.dirIndex]) {
             e.draw(ctx, renderer.width, renderer.height);
         }
     }
 
-    // 4. RENDER: PARTICLES & UI
     renderer.drawParticles(state.particles);
     renderer.updateIndicators(state.enemies, state.dirIndex, state.directions);
     renderer.updateUI(player, state, state.enemiesToSpawn);
 
-    // 5. RENDER: SCOPE (With Recoil)
+    // DYNAMIC SCOPE SIZE
     if (state.recoilY > 0) state.recoilY *= 0.8; 
     const aim = input.getAim();
-    renderer.drawScope(aim.x, aim.y, player.stats.scopeSize, state.recoilY);
+    const weaponScale = WEAPONS[state.currentWeapon].scopeScale || 1.0;
+    renderer.drawScope(aim.x, aim.y, player.stats.scopeSize * weaponScale, state.recoilY);
 
     requestAnimationFrame(gameLoop);
 }
 
-// Init
 updateWeaponUI();
 updateNavLabels();
 requestAnimationFrame(gameLoop);

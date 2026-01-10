@@ -92,7 +92,30 @@ window.buyWeapon = (id) => {
     } catch (e) { console.error("Buy Weapon Error:", e); }
 };
 
-window.buyUpgrade = (type) => { if (type === 'damage' && player.xp >= COST_DAMAGE) { AudioMgr.playSelect(); player.xp -= COST_DAMAGE; player.stats.damage++; const btn = document.getElementById('btn-damage'); if(btn) btn.innerText = `${COST_DAMAGE} XP`; saveGame(); } };
+window.buyUpgrade = (type) => { 
+    const costs = { damage: 100, rof: 150, scope: 120, light: 200 };
+    
+    if (player.xp >= costs[type]) {
+        // Validation: Limit scope and light so they don't break the game
+        if (type === 'scope' && player.stats.scopeSize >= 2.0) return; 
+        if (type === 'light' && player.stats.lightLevel >= 3) return;
+
+        AudioMgr.playSelect(); 
+        player.xp -= costs[type]; 
+        
+        if (type === 'damage') player.stats.damage++;
+        if (type === 'rof') player.stats.reloadSpeed += 0.1; // 10% faster each time
+        if (type === 'scope') player.stats.scopeSize += 0.1; // 10% bigger scope
+        if (type === 'light') player.stats.lightLevel++;     // 1 extra ring of light
+
+        // Update Button Text to show "MAX" if needed
+        const btn = document.getElementById(`btn-${type}`);
+        if(btn) btn.innerText = `${costs[type]} XP`; // You can add logic here to show "MAX"
+        
+        saveGame(); 
+        updateGameUI();
+    } 
+};
 window.buyTurret = (dir) => { if (!state.turrets[dir] && state.gold >= COST_TURRET) { AudioMgr.playSelect(); state.gold -= COST_TURRET; state.turrets[dir] = true; updateNavLabels(); updateShopButtons(); } };
 window.nextWave = () => { AudioMgr.playSelect(); document.getElementById('shop-overlay').style.display = 'none'; state.shopOpen = false; startNextWave(); };
 function startNextWave() { state.wave++; state.enemiesSpawned = 0; state.enemiesToSpawn = 10 + (state.wave * 2); state.enemies = []; showHaiku(state.wave - 1); saveGame(); }
@@ -113,7 +136,9 @@ function shoot() {
     if (!state.gameStarted || state.storyOpen || state.gameOver || !state.waveActive || state.shopOpen) return;
     let now = Date.now();
     let weapon = WEAPONS[state.currentWeapon];
-    if (now - state.lastShotTime < weapon.cooldown) return; 
+    let realCooldown = weapon.cooldown / player.stats.reloadSpeed;
+    
+    if (now - state.lastShotTime < realCooldown) return;
     state.lastShotTime = now;
     AudioMgr.playShoot(); 
     state.recoilY = weapon.recoil;
@@ -286,7 +311,7 @@ function gameLoop(timestamp) {
     if (state.recoilY > 0) state.recoilY *= 0.8; 
 
     // 2. Draw Darkness (Hides enemies outside scope)
-    renderer.drawDarkness(aim.x, aim.y, scopeRadius, state.recoilY);
+    renderer.drawDarkness(aim.x, aim.y, scopeRadius, state.recoilY, player.stats.lightLevel);
 
     // 3. Draw Yellow Guides
     renderer.drawEnemyGuides(state.enemies, state.dirIndex, state.directions, aim, scopeRadius);

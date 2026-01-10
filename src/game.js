@@ -7,6 +7,16 @@ import { AudioMgr } from './audio.js';
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const renderer = new Renderer(canvas, ctx);
+// Matches the IDs in enemies.js
+const BESTIARY_DATA = {
+    'imp':    { name: "Imp", icon: "👿", desc: "Weak but fast. They swarm early.", hp: "Low", speed: "Fast" },
+    'zombie': { name: "Walker", icon: "🧟", desc: "The standard infected. Aim for the head.", hp: "Low", speed: "Slow" },
+    'medic':  { name: "Healer", icon: "🧙‍♂️", desc: "Heals nearby units. PRIORITY TARGET.", hp: "Med", speed: "Med" },
+    'ghost':  { name: "Spectre", icon: "👻", desc: "Hard to see. Flies over defenses.", hp: "Low", speed: "Fast" },
+    'ogre':   { name: "Ogre", icon: "👹", desc: "Thick hide. Requires high caliber.", hp: "High", speed: "Slow" },
+    'golem':  { name: "Golem", icon: "🗿", desc: "Ancient stone. Extremely durable.", hp: "V. High", speed: "V. Slow" },
+    'dragon': { name: "Wyvern", icon: "🐉", desc: "Apex predator. Do not miss.", hp: "Boss", speed: "Fast" }
+};
 
 window.addEventListener('resize', () => { renderer.resize(window.innerWidth, window.innerHeight); });
 renderer.resize(window.innerWidth, window.innerHeight);
@@ -257,17 +267,25 @@ function checkHit(x, y, dmg, isPlayer, radiusMult = 1.0) {
         if (hit) {
             e.hp -= dmg; 
             AudioMgr.playThud(); 
-            if (e.hp <= 0) {
-                spawnExplosion(e.x, drawY, e.color);
-                state.enemies.splice(i, 1);
-                player.totalKills = (player.totalKills || 0) + 1;
-                player.xp += e.xpValue;
-                state.gold += 10;
-                spawnFloatingText(`+${e.xpValue}XP`, e.x, drawY - 20, "#0ff");
-                let type = e.type || 'basic'; 
-    player.bestiary[type] = (player.bestiary[type] || 0) + 1;
-                saveGame();
-            }
+    if (e.hp <= 0) {
+    spawnExplosion(e.x, drawY, e.color);
+    state.enemies.splice(i, 1);
+    
+    // Stats Update
+    player.totalKills = (player.totalKills || 0) + 1;
+    player.xp += e.xpValue;
+    state.gold += 10;
+    
+    spawnFloatingText(`+${e.xpValue}XP`, e.x, drawY - 20, "#0ff");
+
+    // --- FIX IS HERE ---
+    // Use the ID we added to enemies.js
+    let enemyId = e.id || 'imp'; 
+    player.bestiary[enemyId] = (player.bestiary[enemyId] || 0) + 1;
+    // -------------------
+
+    saveGame();
+}
             hitCount++;
             if (!piercing) break; 
             if (piercing && hitCount >= 3) break; 

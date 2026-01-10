@@ -58,7 +58,6 @@
                 <span>Unlock .50 Cal (Pierce)</span>
                 <button onclick="window.buyWeapon('sniper')">500 XP</button>
             </div>
-            <div style="text-align:center; color:#555; margin-top:20px;">More weapons coming soon...</div>
         </div>
 
         <div id="tab-stats" class="tab-content">
@@ -69,14 +68,29 @@
         </div>
 
         <div id="tab-tower" class="tab-content">
-            <div style="text-align:center; color:#aaa;">Select Turret Position (100G)</div>
-            <div class="turret-grid">
-                <div class="turret-btn" id="btn-turret-N" onclick="window.buyTurret('N')">N</div>
-                <div class="turret-btn" id="btn-turret-W" onclick="window.buyTurret('W')">W</div>
-                <div class="turret-center">🏰</div>
-                <div class="turret-btn" id="btn-turret-E" onclick="window.buyTurret('E')">E</div>
-                <div class="turret-btn" id="btn-turret-S" onclick="window.buyTurret('S')">S</div>
+            
+            <div class="accordion-header" onclick="window.toggleAccordion('acc-turrets')">
+                DEPLOY TURRETS (100G) ▼
             </div>
+            <div id="acc-turrets" class="accordion-content">
+                <div class="turret-grid">
+                    <div class="turret-btn" id="btn-turret-N" onclick="window.buyTurret('N')">N</div>
+                    <div class="turret-btn" id="btn-turret-E" onclick="window.buyTurret('E')">E</div>
+                    <div class="turret-btn" id="btn-turret-S" onclick="window.buyTurret('S')">S</div>
+                    <div class="turret-btn" id="btn-turret-W" onclick="window.buyTurret('W')">W</div>
+                </div>
+            </div>
+
+            <div class="accordion-header" onclick="window.toggleAccordion('acc-repairs')">
+                EMERGENCY REPAIRS ▼
+            </div>
+            <div id="acc-repairs" class="accordion-content">
+                <div class="shop-item">
+                    <span>Repair Tower (+20 HP)</span>
+                    <button onclick="window.buyRepair()">50 G</button>
+                </div>
+            </div>
+
         </div>
 
         <button id="next-wave-btn" onclick="window.nextWave()">START NEXT WAVE</button>
@@ -89,9 +103,9 @@
 
     <canvas id="gameCanvas"></canvas>
 
-    <div id="nav-left" class="nav-zone">&lt;</div>
-    <div id="nav-right" class="nav-zone">&gt;</div>
-    <div id="nav-down" class="nav-zone">v</div>
+    <div id="nav-left" class="nav-zone">W</div>
+    <div id="nav-right" class="nav-zone">E</div>
+    <div id="nav-down" class="nav-zone">S</div>
     <button id="restart-btn" onclick="location.reload()">TRY AGAIN</button>
 
     <script type="module" src="src/game.js"></script>

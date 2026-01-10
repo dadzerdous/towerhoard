@@ -1,36 +1,42 @@
-const ENEMY_TYPES = [
+export const ENEMY_TYPES = [
     { 
         id: 'imp', symbol: '👿', hp: 1, speed: 0.15, 
-        size: 0.8, flyHeight: 0, minWave: 1, xp: 5, color: '#f0f' 
+        size: 0.8, flyHeight: 0, minWave: 1, xp: 5, color: '#f0f',
+        name: "Imp", desc: "Weak but fast. They swarm early." 
     },
     { 
         id: 'zombie', symbol: '🧟', hp: 2, speed: 0.08, 
-        size: 1.0, flyHeight: 0, minWave: 1, xp: 10, color: '#0f0'
+        size: 1.0, flyHeight: 0, minWave: 1, xp: 10, color: '#0f0',
+        name: "Walker", desc: "The standard infected. Aim for the head."
     },
     { 
         id: 'ghost', symbol: '👻', hp: 2, speed: 0.1, 
         size: 1.0, flyHeight: 40, minWave: 3, xp: 15, color: '#aaf',
-        isGhost: true 
+        isGhost: true,
+        name: "Spectre", desc: "Hard to see. Flies over defenses."
     },
     { 
         id: 'medic', symbol: '🧙‍♂️', hp: 3, speed: 0.06, 
         size: 1.1, flyHeight: 0, minWave: 2, xp: 20, color: '#fff',
-        isMedic: true // NEW PROPERTY
+        isMedic: true,
+        name: "Healer", desc: "Heals nearby units. PRIORITY TARGET."
     },
     { 
         id: 'ogre', symbol: '👹', hp: 5, speed: 0.05, 
-        size: 1.5, flyHeight: 0, minWave: 4, xp: 25, color: '#f00'
+        size: 1.5, flyHeight: 0, minWave: 4, xp: 25, color: '#f00',
+        name: "Ogre", desc: "Thick hide. Requires high caliber."
     },
     { 
         id: 'golem', symbol: '🗿', hp: 10, speed: 0.03, 
-        size: 1.8, flyHeight: 0, minWave: 6, xp: 50, color: '#888'
+        size: 1.8, flyHeight: 0, minWave: 6, xp: 50, color: '#888',
+        name: "Golem", desc: "Ancient stone. Extremely durable."
     },
     { 
         id: 'dragon', symbol: '🐉', hp: 20, speed: 0.04, 
-        size: 2.2, flyHeight: 80, minWave: 10, xp: 200, color: '#fa0'
+        size: 2.2, flyHeight: 80, minWave: 10, xp: 200, color: '#fa0',
+        name: "Wyvern", desc: "Apex predator. Do not miss."
     }
 ];
-
 export class Enemy {
     constructor(width, height, wave) {
         const allowedTypes = ENEMY_TYPES.filter(t => wave >= t.minWave);

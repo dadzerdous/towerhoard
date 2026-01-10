@@ -44,9 +44,9 @@
         <h2>WAVE COMPLETE</h2>
         
         <div class="shop-tabs">
-            <div class="tab-btn active" onclick="window.switchTab('weapons')">WEAPONS</div>
-            <div class="tab-btn" onclick="window.switchTab('stats')">STATS</div>
-            <div class="tab-btn" onclick="window.switchTab('tower')">TOWER</div>
+            <div class="tab-btn active" id="btn-tab-weapons" onclick="window.switchTab('weapons')">WEAPONS</div>
+            <div class="tab-btn" id="btn-tab-stats" onclick="window.switchTab('stats')">STATS</div>
+            <div class="tab-btn" id="btn-tab-tower" onclick="window.switchTab('tower')">TOWER</div>
         </div>
 
         <div id="tab-weapons" class="tab-content active">
@@ -64,30 +64,18 @@
         <div id="tab-stats" class="tab-content">
             <div class="shop-item">
                 <span>Base Damage (+1)</span>
-                <button onclick="window.buyUpgrade('damage')">100 XP</button>
+                <button id="btn-damage" onclick="window.buyUpgrade('damage')">100 XP</button>
             </div>
-            <div class="shop-item">
-                <span>Scope Stability</span>
-                <button class="disabled">LOCKED</button> </div>
         </div>
 
         <div id="tab-tower" class="tab-content">
-            <div style="margin-bottom:10px; text-align:center; color:#aaa;">Buy Auto-Turrets (100G)</div>
-            <div class="shop-item">
-                <span>NORTH Turret</span>
-                <button id="btn-turret-N" onclick="window.buyTurret('N')">BUY</button>
-            </div>
-            <div class="shop-item">
-                <span>EAST Turret</span>
-                <button id="btn-turret-E" onclick="window.buyTurret('E')">BUY</button>
-            </div>
-            <div class="shop-item">
-                <span>SOUTH Turret</span>
-                <button id="btn-turret-S" onclick="window.buyTurret('S')">BUY</button>
-            </div>
-            <div class="shop-item">
-                <span>WEST Turret</span>
-                <button id="btn-turret-W" onclick="window.buyTurret('W')">BUY</button>
+            <div style="text-align:center; color:#aaa;">Select Turret Position (100G)</div>
+            <div class="turret-grid">
+                <div class="turret-btn" id="btn-turret-N" onclick="window.buyTurret('N')">N</div>
+                <div class="turret-btn" id="btn-turret-W" onclick="window.buyTurret('W')">W</div>
+                <div class="turret-center">🏰</div>
+                <div class="turret-btn" id="btn-turret-E" onclick="window.buyTurret('E')">E</div>
+                <div class="turret-btn" id="btn-turret-S" onclick="window.buyTurret('S')">S</div>
             </div>
         </div>
 
@@ -101,9 +89,9 @@
 
     <canvas id="gameCanvas"></canvas>
 
-    <div id="nav-left" class="nav-zone">W</div>
-    <div id="nav-right" class="nav-zone">E</div>
-    <div id="nav-down" class="nav-zone">S</div>
+    <div id="nav-left" class="nav-zone">&lt;</div>
+    <div id="nav-right" class="nav-zone">&gt;</div>
+    <div id="nav-down" class="nav-zone">v</div>
     <button id="restart-btn" onclick="location.reload()">TRY AGAIN</button>
 
     <script type="module" src="src/game.js"></script>

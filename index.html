@@ -32,7 +32,10 @@
     </div>
 
     <div id="weapon-rack">
-        <div id="weapon-toggle" onclick="window.toggleWeaponMenu()">🔫</div>
+        <div id="weapon-toggle" onclick="window.toggleWeaponMenu()">
+            <span id="weapon-icon">🔫</span>
+            <div id="weapon-cooldown"></div>
+        </div>
         <div id="weapon-list">
             <div class="weapon-slot active" id="slot-rifle" onclick="window.selectWeapon('rifle')">RIFLE</div>
             <div class="weapon-slot locked" id="slot-shotgun" onclick="window.selectWeapon('shotgun')">SHOTGUN</div>
@@ -68,7 +71,6 @@
         </div>
 
         <div id="tab-tower" class="tab-content">
-            
             <div class="accordion-header" onclick="window.toggleAccordion('acc-turrets')">
                 DEPLOY TURRETS (100G) ▼
             </div>
@@ -80,7 +82,6 @@
                     <div class="turret-btn" id="btn-turret-W" onclick="window.buyTurret('W')">W</div>
                 </div>
             </div>
-
             <div class="accordion-header" onclick="window.toggleAccordion('acc-repairs')">
                 EMERGENCY REPAIRS ▼
             </div>
@@ -90,7 +91,6 @@
                     <button onclick="window.buyRepair()">50 G</button>
                 </div>
             </div>
-
         </div>
 
         <button id="next-wave-btn" onclick="window.nextWave()">START NEXT WAVE</button>

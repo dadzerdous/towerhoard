@@ -31,7 +31,7 @@ let state = {
     turretTimer: 0, gameOver: false, currentWeapon: 'rifle', lastShotTime: 0, recoilY: 0, targetLocked: false,
     castleDir: 'N', castleProgress: 0 
 };
-state.castleDir = 'N'; // Force N for testing
+state.castleDir = 'N'; 
 
 const input = new InputHandler(canvas);
 
@@ -49,7 +49,7 @@ window.switchTab = (tabName) => { AudioMgr.playSelect(); document.querySelectorA
 window.toggleAccordion = (id) => { AudioMgr.playSelect(); const el = document.getElementById(id); if (el.classList.contains('show')) { el.classList.remove('show'); } else { document.querySelectorAll('.accordion-content').forEach(e => e.classList.remove('show')); el.classList.add('show'); } };
 window.buyRepair = () => { if (state.gold >= 50 && state.towerHp < 100) { AudioMgr.playSelect(); state.gold -= 50; state.towerHp = Math.min(100, state.towerHp + 20); updateUI(); } };
 window.toggleWeaponMenu = () => { AudioMgr.playSelect(); const list = document.getElementById('weapon-list'); list.classList.toggle('open'); if (list.classList.contains('open')) { document.querySelectorAll('.weapon-slot').forEach(el => el.classList.remove('active')); const el = document.getElementById(`slot-${state.currentWeapon}`); if(el) el.classList.add('active'); } };
-window.selectWeapon = (id) => { if (player.unlockedWeapons.includes(id)) { AudioMgr.playSelect(); state.currentWeapon = id; document.getElementById('weapon-list').classList.remove('open'); let icon = "🔫"; if(id === 'shotgun') icon = "💥"; if(id === 'sniper') icon = "🔭"; document.getElementById('weapon-icon').innerText = icon; } };
+window.selectWeapon = (id) => { if (player.unlockedWeapons.includes(id)) { AudioMgr.playSelect(); state.currentWeapon = id; document.getElementById('weapon-list').classList.remove('open'); let icon = "🔫"; if(id === 'shotgun') icon = "💥"; if(id === 'sniper') icon = "🔭"; document.getElementById('weapon-toggle').innerText = icon; } };
 window.buyWeapon = (id) => { let cost = (id === 'shotgun') ? 200 : 500; if (player.xp >= cost && !player.unlockedWeapons.includes(id)) { AudioMgr.playSelect(); player.xp -= cost; player.unlockedWeapons.push(id); saveGame(); updateWeaponUI(); } };
 window.buyUpgrade = (type) => { if (type === 'damage' && player.xp >= COST_DAMAGE) { AudioMgr.playSelect(); player.xp -= COST_DAMAGE; player.stats.damage++; const btn = document.getElementById('btn-damage'); if(btn) btn.innerText = `${COST_DAMAGE} XP`; saveGame(); } };
 window.buyTurret = (dir) => { if (!state.turrets[dir] && state.gold >= COST_TURRET) { AudioMgr.playSelect(); state.gold -= COST_TURRET; state.turrets[dir] = true; updateNavLabels(); updateShopButtons(); } };
@@ -57,13 +57,11 @@ window.nextWave = () => { AudioMgr.playSelect(); document.getElementById('shop-o
 function startNextWave() { state.wave++; state.enemiesSpawned = 0; state.enemiesToSpawn = 10 + (state.wave * 2); state.enemies = []; showHaiku(state.wave - 1); saveGame(); }
 function turn(dirChange) { state.dirIndex = (state.dirIndex + dirChange + 4) % 4; updateNavLabels(); if (state.shopOpen) updateShopButtons(); }
 
-// UPDATED: SHOOT LOGIC
 function shoot() {
     if (!state.gameStarted || state.storyOpen || state.gameOver || !state.waveActive || state.shopOpen) return;
     let now = Date.now();
     let weapon = WEAPONS[state.currentWeapon];
-    if (now - state.lastShotTime < weapon.cooldown) return; // Cooldown check
-    
+    if (now - state.lastShotTime < weapon.cooldown) return; 
     state.lastShotTime = now;
     AudioMgr.playShoot(); 
     state.recoilY = weapon.recoil;
@@ -104,16 +102,23 @@ function checkHit(x, y, dmg, isPlayer, radiusMult = 1.0) {
     }
 }
 
-function checkTargetLock(aimX, aimY) {
+// UPDATED: DETECTOR LOGIC (Scope Radius Check)
+function checkTargetLock(aimX, aimY, scopeRadius) {
     state.targetLocked = false;
     for (let i = 0; i < state.enemies.length; i++) {
         let e = state.enemies[i];
+        // Only check current view
         if (e.view !== state.directions[state.dirIndex]) continue;
-        let scale = (100 - e.distance) / 10;
+        
         let drawY = e.y + ((100 - e.distance) * (canvas.height/300));
-        let size = (12 * scale); 
         let dist = Math.hypot(e.x - aimX, drawY - aimY);
-        if (dist < size) { state.targetLocked = true; return; }
+        
+        // If distance is less than Scope Radius, we have them in the tube
+        // Detection range slightly smaller than radius to avoid flickering on edge
+        if (dist < scopeRadius * 0.9) { 
+            state.targetLocked = true; 
+            return; 
+        }
     }
 }
 
@@ -162,14 +167,10 @@ function gameLoop(timestamp) {
     if (currentDir === state.castleDir) { renderer.drawCastle(state.castleProgress, true); }
 
     const isPaused = state.shopOpen || state.storyOpen || !state.gameStarted;
-
-    // UPDATED INPUT: Handle Gamepad Actions
-    const actions = input.update(); // Get input state
+    const actions = input.update();
     
     if (!isPaused) {
-        // TURN (From Gamepad Bumpers)
         if (actions.turn !== 0) turn(actions.turn);
-        // FIRE (From Gamepad Trigger)
         if (actions.fire) shoot();
 
         if (state.waveActive) {
@@ -186,13 +187,10 @@ function gameLoop(timestamp) {
             if (state.turretTimer > 2000) { fireTurrets(); state.turretTimer = 0; }
         }
 
-        // UPDATE COOLDOWN UI
         let weapon = WEAPONS[state.currentWeapon];
         let timeSinceShot = Date.now() - state.lastShotTime;
         let cooldownPct = 0;
-        if (timeSinceShot < weapon.cooldown) {
-            cooldownPct = 1 - (timeSinceShot / weapon.cooldown);
-        }
+        if (timeSinceShot < weapon.cooldown) { cooldownPct = 1 - (timeSinceShot / weapon.cooldown); }
         document.getElementById('weapon-cooldown').style.height = (cooldownPct * 100) + '%';
 
         state.enemies.sort((a, b) => b.distance - a.distance);
@@ -213,21 +211,36 @@ function gameLoop(timestamp) {
 
     if (state.gameOver) { renderer.drawGameOver(state.towerHp <= 0); return; }
 
+    // RENDER ORDER (Sandwich Method)
+    
+    // 1. Draw Darkness
+    const aim = input.getAim();
+    const weaponScale = WEAPONS[state.currentWeapon].scopeScale || 1.0;
+    const scopeRadius = player.stats.scopeSize * weaponScale; // Calculated here to pass to both
+    
+    if (state.recoilY > 0) state.recoilY *= 0.8; 
+    renderer.drawDarkness(aim.x, aim.y, scopeRadius, state.recoilY);
+
+    // 2. Draw Enemies (Visible ones)
     for (let i = state.enemies.length - 1; i >= 0; i--) {
         let e = state.enemies[i];
         if (e.view === state.directions[state.dirIndex]) { e.draw(ctx, renderer.width, renderer.height); }
     }
 
+    // 3. Draw Yellow Guides (Clipped)
+    renderer.drawEnemyGuides(state.enemies, state.dirIndex, state.directions, aim, scopeRadius);
+
+    // 4. Draw Scope UI (Rims)
+    checkTargetLock(aim.x, aim.y, renderer.height * 0.17 * scopeRadius); // Pass radius pixel size approx
+    // Actual Radius calculation for checkTargetLock needs to match renderer
+    let realRadius = (renderer.height * 0.17) * scopeRadius; 
+    checkTargetLock(aim.x, aim.y, realRadius);
+
+    renderer.drawScopeUI(aim.x, aim.y, scopeRadius, state.recoilY, state.targetLocked);
+
     renderer.drawParticles(state.particles);
     renderer.updateIndicators(state.enemies, state.dirIndex, state.directions);
     renderer.updateUI(player, state, state.enemiesToSpawn);
-    
-    const aim = input.getAim();
-    const weaponScale = WEAPONS[state.currentWeapon].scopeScale || 1.0;
-    renderer.drawEnemyGuides(state.enemies, state.dirIndex, state.directions, aim, player.stats.scopeSize * weaponScale);
-    if (state.recoilY > 0) state.recoilY *= 0.8; 
-    checkTargetLock(aim.x, aim.y);
-    renderer.drawScope(aim.x, aim.y, player.stats.scopeSize * weaponScale, state.recoilY, state.targetLocked);
 
     requestAnimationFrame(gameLoop);
 }

@@ -51,8 +51,22 @@ window.switchTab = (tabName) => { AudioMgr.playSelect(); document.querySelectorA
 window.toggleAccordion = (id) => { AudioMgr.playSelect(); const el = document.getElementById(id); if (el.classList.contains('show')) { el.classList.remove('show'); } else { document.querySelectorAll('.accordion-content').forEach(e => e.classList.remove('show')); el.classList.add('show'); } };
 window.buyRepair = () => { if (state.gold >= 50 && state.towerHp < 100) { AudioMgr.playSelect(); state.gold -= 50; state.towerHp = Math.min(100, state.towerHp + 20); updateGameUI(); } };
 window.toggleWeaponMenu = () => { AudioMgr.playSelect(); const list = document.getElementById('weapon-list'); list.classList.toggle('open'); if (list.classList.contains('open')) { document.querySelectorAll('.weapon-slot').forEach(el => el.classList.remove('active')); const el = document.getElementById(`slot-${state.currentWeapon}`); if(el) el.classList.add('active'); } };
-window.selectWeapon = (id) => { if (player.unlockedWeapons.includes(id)) { AudioMgr.playSelect(); state.currentWeapon = id; document.getElementById('weapon-list').classList.remove('open'); let icon = "🔫"; if(id === 'shotgun') icon = "💥"; if(id === 'sniper') icon = "🔭"; document.getElementById('weapon-toggle').innerText = icon; } };
-
+window.selectWeapon = (id) => {
+    if (player.unlockedWeapons.includes(id)) {
+        AudioMgr.playSelect();
+        state.currentWeapon = id;
+        document.getElementById('weapon-list').classList.remove('open');
+        
+        let icon = "🔫";
+        if (id === 'shotgun') icon = "💥";
+        if (id === 'sniper') icon = "🔭";
+        
+        // --- FIX IS HERE ---
+        // OLD: document.getElementById('weapon-toggle').innerText = icon; 
+        // NEW: Target the span specifically so we don't delete the cooldown bar
+        document.getElementById('weapon-icon').innerText = icon; 
+    }
+};
 // BUG FIX: Wrapped buyWeapon in try/catch to avoid freezing loop
 window.buyWeapon = (id) => { 
     try {

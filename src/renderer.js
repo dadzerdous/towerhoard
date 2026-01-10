@@ -16,32 +16,80 @@ export class Renderer {
     triggerDamageFlash() { this.damageFlashTimer = 1.0; }
 
     clear() {
-        this.ctx.fillStyle = "#222"; this.ctx.fillRect(0, 0, this.width, this.height / 2);
-        this.ctx.fillStyle = "#000"; this.ctx.fillRect(0, this.height / 2, this.width, this.height / 2);
-        this.ctx.strokeStyle = '#444'; this.ctx.lineWidth = 1;
+        // Sky
+        this.ctx.fillStyle = "#1a1a1a"; 
+        this.ctx.fillRect(0, 0, this.width, this.height / 2);
+        // Ground
+        this.ctx.fillStyle = "#050505"; 
+        this.ctx.fillRect(0, this.height / 2, this.width, this.height / 2);
+        
+        this.ctx.strokeStyle = '#333'; this.ctx.lineWidth = 1;
         this.ctx.beginPath(); this.ctx.moveTo(0, this.height/2); this.ctx.lineTo(this.width, this.height/2);
         this.ctx.stroke();
     }
 
-    drawCastle(progress, isActiveDirection) {
-        if (!isActiveDirection) return;
-        const cx = this.width / 2; const cy = this.height / 2;
-        const size = 15 + (progress * 20); 
+    // NEW: Draw distinctive landmarks per direction
+    drawEnvironment(dir, castleProgress, castleDir) {
+        const cx = this.width / 2;
+        const cy = this.height / 2;
+        
         this.ctx.save();
-        this.ctx.fillStyle = "#000"; 
-        this.ctx.strokeStyle = "#222"; 
-        this.ctx.beginPath();
-        if (progress < 1) {
-            this.ctx.fillRect(cx - 15, cy - 10, 30, 10);
-        } else if (progress < 3) {
-            this.ctx.fillRect(cx - size/2, cy - size, size, size);
-            this.ctx.moveTo(cx - size/2, cy - size); this.ctx.lineTo(cx, cy - size - (size/2)); this.ctx.lineTo(cx + size/2, cy - size);
-        } else {
-            this.ctx.fillRect(cx - size, cy - size/2, size*2, size/2); 
-            this.ctx.fillRect(cx - size, cy - size, size/3, size); 
-            this.ctx.fillRect(cx + size*0.66, cy - size, size/3, size); 
+        this.ctx.fillStyle = "#0a0a0a"; // Silhouette color (Darker than sky, lighter than ground)
+        
+        if (dir === castleDir) {
+            // --- CASTLE (Goal) ---
+            const size = 15 + (castleProgress * 20); 
+            this.ctx.beginPath();
+            if (castleProgress < 1) {
+                this.ctx.fillRect(cx - 15, cy - 10, 30, 10);
+            } else if (castleProgress < 3) {
+                this.ctx.fillRect(cx - size/2, cy - size, size, size);
+                this.ctx.moveTo(cx - size/2, cy - size); this.ctx.lineTo(cx, cy - size - (size/2)); this.ctx.lineTo(cx + size/2, cy - size);
+            } else {
+                this.ctx.fillRect(cx - size, cy - size/2, size*2, size/2); 
+                this.ctx.fillRect(cx - size, cy - size, size/3, size); 
+                this.ctx.fillRect(cx + size*0.66, cy - size, size/3, size); 
+            }
+            this.ctx.fill();
+        } 
+        else if (dir === 'E') {
+            // --- FOREST (East) ---
+            // Draw simple pine trees
+            this.ctx.beginPath();
+            [ -100, -40, 20, 90 ].forEach(offset => {
+                let h = 40 + (Math.random() * 20); // Random height variance visual
+                let x = cx + offset;
+                this.ctx.moveTo(x, cy);
+                this.ctx.lineTo(x - 10, cy);
+                this.ctx.lineTo(x, cy - h);
+                this.ctx.lineTo(x + 10, cy);
+                this.ctx.lineTo(x, cy);
+            });
+            this.ctx.fill();
         }
-        this.ctx.stroke(); this.ctx.fill();
+        else if (dir === 'W') {
+            // --- MOUNTAINS (West) ---
+            this.ctx.beginPath();
+            this.ctx.moveTo(cx - 200, cy);
+            this.ctx.lineTo(cx - 100, cy - 60);
+            this.ctx.lineTo(cx, cy);
+            this.ctx.lineTo(cx + 80, cy - 90);
+            this.ctx.lineTo(cx + 200, cy);
+            this.ctx.fill();
+        }
+        else if (dir === 'S') {
+            // --- GRAVEYARD (South) ---
+            // Small tombstones
+            [ -80, -20, 50, 120 ].forEach(offset => {
+                let x = cx + offset;
+                this.ctx.fillRect(x, cy - 15, 10, 15); // Stone
+                this.ctx.fillRect(x - 5, cy - 25, 20, 5); // Cross bar? Or just boxy stones
+                // Cross shape
+                this.ctx.fillRect(x + 2, cy - 30, 6, 30);
+                this.ctx.fillRect(x - 5, cy - 20, 20, 6);
+            });
+        }
+
         this.ctx.restore();
     }
 
@@ -61,14 +109,12 @@ export class Renderer {
         this.ctx.restore();
     }
 
-    // UPDATED YELLOW LINE
     drawEnemyGuides(enemies, currentDirIndex, directions, aim, scopeSize) {
         const scopeRadius = (this.height * 0.17) * scopeSize;
-        
         this.ctx.save();
         this.ctx.beginPath(); this.ctx.rect(0, 0, this.width, this.height); 
         this.ctx.arc(aim.x, aim.y, scopeRadius, 0, Math.PI*2, true); 
-        this.ctx.clip(); // Mask
+        this.ctx.clip(); 
 
         this.ctx.shadowBlur = 10; this.ctx.shadowColor = "#ffff00"; 
 
@@ -79,10 +125,8 @@ export class Renderer {
                 let dy = drawY - aim.y;
                 let distToCenter = Math.hypot(dx, dy);
 
-                // Hide if inside scope (Handoff to Halo)
-                if (distToCenter < scopeRadius * 1.1) return; 
+                if (distToCenter < scopeRadius * 1.1) return; // Hide if in scope
 
-                // Dynamic Length based on closeness (Z-Depth)
                 let intensity = 0;
                 if (e.distance < 100) intensity = 1 - (e.distance / 100);
                 intensity = Math.pow(intensity, 2); 
@@ -90,8 +134,6 @@ export class Renderer {
                 if (intensity > 0.05) {
                     let nx = dx / distToCenter;
                     let ny = dy / distToCenter;
-                    
-                    // Line grows as it gets closer
                     let lineLength = 10 + (80 * intensity); 
                     let startOffset = scopeRadius + 5; 
 

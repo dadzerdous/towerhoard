@@ -16,6 +16,7 @@ export class Renderer {
     triggerDamageFlash() { this.damageFlashTimer = 1.0; }
 
     clear() {
+        // Draw World Background
         this.ctx.fillStyle = "#222"; this.ctx.fillRect(0, 0, this.width, this.height / 2);
         this.ctx.fillStyle = "#000"; this.ctx.fillRect(0, this.height / 2, this.width, this.height / 2);
         this.ctx.strokeStyle = '#444'; this.ctx.lineWidth = 1;
@@ -42,63 +43,101 @@ export class Renderer {
         this.ctx.restore();
     }
 
-    // UPDATED: 0.17 Size
-    drawScope(aimX, aimY, scopeSize, recoilY, isLocked) {
-        const radius = (this.height * 0.17) * scopeSize; // SMALLER
+    // STEP 1: Draw the Black Overlay (The Darkness)
+    drawDarkness(aimX, aimY, scopeSize, recoilY) {
+        const radius = (this.height * 0.17) * scopeSize;
         const rx = aimX; const ry = aimY - recoilY; 
 
         this.ctx.save();
-        this.ctx.beginPath(); this.ctx.rect(0, 0, this.width, this.height); 
-        this.ctx.arc(rx, ry, radius, 0, Math.PI*2, true); 
+        this.ctx.beginPath(); 
+        this.ctx.rect(0, 0, this.width, this.height); 
+        this.ctx.arc(rx, ry, radius, 0, Math.PI*2, true); // Cut hole
         this.ctx.clip();
         
-        this.ctx.fillStyle = "#000"; this.ctx.fillRect(0, 0, this.width, this.height);
+        this.ctx.fillStyle = "#000"; 
+        this.ctx.fillRect(0, 0, this.width, this.height);
 
+        // Damage Flash (Red tint in darkness)
         if (this.damageFlashTimer > 0) {
             this.ctx.fillStyle = `rgba(255, 0, 0, ${this.damageFlashTimer * 0.3})`;
             this.ctx.fillRect(0, 0, this.width, this.height);
             this.damageFlashTimer -= 0.05; 
         }
         this.ctx.restore();
+    }
 
-        this.ctx.strokeStyle = "#002200"; this.ctx.lineWidth = 10;
-        this.ctx.beginPath(); this.ctx.arc(rx, ry, radius, 0, Math.PI*2); this.ctx.stroke();
+    // STEP 2: Draw Yellow Guides (Sandwiched between Darkness and UI)
+    drawEnemyGuides(enemies, currentDirIndex, directions, aim, scopeSize) {
+        const radius = (this.height * 0.17) * scopeSize;
+        
+        this.ctx.save();
+        
+        // CLIP: Protect the scope circle so lines don't draw inside
+        this.ctx.beginPath();
+        this.ctx.rect(0, 0, this.width, this.height); 
+        this.ctx.arc(aim.x, aim.y, radius, 0, Math.PI*2, true); 
+        this.ctx.clip();
 
+        // NEON GLOW
+        this.ctx.shadowBlur = 15; 
+        this.ctx.shadowColor = "#ffff00"; // Bright Yellow Glow
+
+        enemies.forEach(e => {
+            // Only draw for enemies in current view direction
+            if (e.view === directions[currentDirIndex] && e.distance > 0) {
+                let drawY = e.y + ((100 - e.distance) * (this.height/300));
+                
+                this.ctx.strokeStyle = "rgba(255, 255, 0, 0.6)"; // Visible Yellow
+                this.ctx.lineWidth = 3;
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.width / 2, this.height); // Bottom Center
+                this.ctx.lineTo(e.x, drawY + 20); // Enemy Feet
+                this.ctx.stroke();
+            }
+        });
+        
+        this.ctx.restore();
+    }
+
+    // STEP 3: Draw Scope UI (Rims & Crosshair)
+    drawScopeUI(aimX, aimY, scopeSize, recoilY, isLocked) {
+        const radius = (this.height * 0.17) * scopeSize;
+        const rx = aimX; const ry = aimY - recoilY; 
+
+        // Outer Rim
+        this.ctx.strokeStyle = "#002200"; 
+        this.ctx.lineWidth = 10;
+        this.ctx.beginPath(); 
+        this.ctx.arc(rx, ry, radius, 0, Math.PI*2); 
+        this.ctx.stroke();
+
+        // Target Lock Halo (Yellow Rim)
         if (isLocked) {
-            this.ctx.strokeStyle = "rgba(255, 255, 0, 0.8)"; this.ctx.lineWidth = 4;
-            this.ctx.beginPath(); this.ctx.arc(rx, ry, radius + 8, 0, Math.PI*2); this.ctx.stroke();
+            this.ctx.save();
+            this.ctx.shadowBlur = 15;
+            this.ctx.shadowColor = "yellow";
+            this.ctx.strokeStyle = "rgba(255, 255, 0, 0.9)"; 
+            this.ctx.lineWidth = 6;
+            this.ctx.beginPath(); 
+            this.ctx.arc(rx, ry, radius + 8, 0, Math.PI*2); 
+            this.ctx.stroke();
+            this.ctx.restore();
         }
 
-        this.ctx.strokeStyle = "#0f0"; this.ctx.lineWidth = 1;
-        this.ctx.beginPath(); this.ctx.arc(rx, ry, radius - 5, 0, Math.PI*2); this.ctx.stroke();
+        // Inner Green Line
+        this.ctx.strokeStyle = "#0f0"; 
+        this.ctx.lineWidth = 1;
+        this.ctx.beginPath(); 
+        this.ctx.arc(rx, ry, radius - 5, 0, Math.PI*2); 
+        this.ctx.stroke();
 
+        // Crosshair (Turns Yellow on Lock)
         this.ctx.strokeStyle = isLocked ? "yellow" : "rgba(255, 0, 0, 0.9)";
         this.ctx.lineWidth = 1;
         this.ctx.beginPath();
         this.ctx.moveTo(rx - 10, ry); this.ctx.lineTo(rx + 10, ry);
         this.ctx.moveTo(rx, ry - 10); this.ctx.lineTo(rx, ry + 10);
         this.ctx.stroke();
-    }
-
-    drawEnemyGuides(enemies, currentDirIndex, directions, aim, scopeSize) {
-        const radius = (this.height * 0.17) * scopeSize; // SMALLER
-        this.ctx.save();
-        this.ctx.beginPath(); this.ctx.rect(0, 0, this.width, this.height); 
-        this.ctx.arc(aim.x, aim.y, radius, 0, Math.PI*2, true); 
-        this.ctx.clip();
-
-        this.ctx.shadowBlur = 15; this.ctx.shadowColor = "yellow";
-
-        enemies.forEach(e => {
-            if (e.view === directions[currentDirIndex] && e.distance > 0) {
-                let scale = (100 - e.distance) / 10;
-                let drawY = e.y + ((100 - e.distance) * (this.height/300));
-                this.ctx.strokeStyle = "rgba(255, 255, 0, 0.5)"; this.ctx.lineWidth = 2;
-                this.ctx.beginPath(); this.ctx.moveTo(this.width / 2, this.height); 
-                this.ctx.lineTo(e.x, drawY + 20); this.ctx.stroke();
-            }
-        });
-        this.ctx.restore();
     }
 
     drawParticles(particles) {

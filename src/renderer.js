@@ -23,41 +23,28 @@ export class Renderer {
         this.ctx.stroke();
     }
 
-    // NEW: Castle Drawing
     drawCastle(progress, isActiveDirection) {
         if (!isActiveDirection || progress === 0) return;
-
-        const cx = this.width / 2;
-        const cy = this.height / 2;
-        
-        // Progress 1 = Small Box, 5 = Huge Castle
+        const cx = this.width / 2; const cy = this.height / 2;
         const size = 10 + (progress * 15); 
-        
         this.ctx.save();
-        this.ctx.fillStyle = "#111"; // Silhouette color
-        this.ctx.strokeStyle = "#333";
-        
-        // Simple shape based on progress
+        this.ctx.fillStyle = "#111"; this.ctx.strokeStyle = "#333";
         this.ctx.beginPath();
         if (progress < 3) {
-            // Simple House
             this.ctx.fillRect(cx - size/2, cy - size, size, size);
-            this.ctx.moveTo(cx - size/2, cy - size);
-            this.ctx.lineTo(cx, cy - size - (size/2));
-            this.ctx.lineTo(cx + size/2, cy - size);
+            this.ctx.moveTo(cx - size/2, cy - size); this.ctx.lineTo(cx, cy - size - (size/2)); this.ctx.lineTo(cx + size/2, cy - size);
         } else {
-            // Castle (Towers)
-            this.ctx.fillRect(cx - size, cy - size/2, size*2, size/2); // Base
-            this.ctx.fillRect(cx - size, cy - size, size/3, size); // Left Tower
-            this.ctx.fillRect(cx + size*0.66, cy - size, size/3, size); // Right Tower
+            this.ctx.fillRect(cx - size, cy - size/2, size*2, size/2); 
+            this.ctx.fillRect(cx - size, cy - size, size/3, size); 
+            this.ctx.fillRect(cx + size*0.66, cy - size, size/3, size); 
         }
-        this.ctx.stroke();
-        this.ctx.fill();
+        this.ctx.stroke(); this.ctx.fill();
         this.ctx.restore();
     }
 
+    // UPDATED: 0.17 Size
     drawScope(aimX, aimY, scopeSize, recoilY, isLocked) {
-        const radius = (this.height * 0.22) * scopeSize;
+        const radius = (this.height * 0.17) * scopeSize; // SMALLER
         const rx = aimX; const ry = aimY - recoilY; 
 
         this.ctx.save();
@@ -94,7 +81,7 @@ export class Renderer {
     }
 
     drawEnemyGuides(enemies, currentDirIndex, directions, aim, scopeSize) {
-        const radius = (this.height * 0.22) * scopeSize;
+        const radius = (this.height * 0.17) * scopeSize; // SMALLER
         this.ctx.save();
         this.ctx.beginPath(); this.ctx.rect(0, 0, this.width, this.height); 
         this.ctx.arc(aim.x, aim.y, radius, 0, Math.PI*2, true); 

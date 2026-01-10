@@ -11,10 +11,10 @@ body {
     display: block;
     position: absolute;
     top: 0; left: 0;
-    /* Removed 100vw/vh to let JS control exact pixels for Aspect Ratio fix */
     cursor: crosshair;
 }
 
+/* UI Layer */
 #ui-layer {
     position: absolute;
     top: 20px; left: 20px;
@@ -28,7 +28,93 @@ body {
     border-radius: 8px;
 }
 
-/* Shop Menu */
+/* START SCREEN */
+#start-screen {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    color: #0f0;
+}
+#start-screen h1 { font-size: 40px; margin-bottom: 10px; text-shadow: 0 0 20px #0f0; }
+#start-screen p { font-size: 18px; color: #888; margin-bottom: 30px; }
+#start-btn {
+    padding: 20px 50px;
+    font-size: 24px;
+    font-weight: bold;
+    background: #0f0;
+    color: #000;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 0 20px #0f0;
+}
+
+/* COLLAPSIBLE WEAPON RACK */
+#weapon-rack {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end; /* Align to right */
+    gap: 5px;
+    z-index: 60;
+}
+
+/* The Main Toggle Button (Shows current weapon) */
+#weapon-toggle {
+    width: 70px;
+    height: 70px;
+    background: rgba(0, 40, 0, 0.9);
+    border: 3px solid #0f0;
+    color: #0f0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    border-radius: 50%; /* Circle */
+    font-size: 24px;
+    box-shadow: 0 0 15px #0f0;
+    user-select: none;
+    transition: transform 0.1s;
+}
+#weapon-toggle:active { transform: scale(0.9); }
+
+/* The List of Weapons (Hidden by default) */
+#weapon-list {
+    display: none; /* Hidden */
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+}
+#weapon-list.open { display: flex; }
+
+.weapon-slot {
+    width: 60px;
+    height: 40px;
+    background: rgba(0, 20, 0, 0.8);
+    border: 1px solid #0f0;
+    color: #0f0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: bold;
+    user-select: none;
+    border-radius: 5px;
+}
+.weapon-slot.active { background: #0f0; color: #000; }
+.weapon-slot.locked { border-color: #555; color: #555; background: #111; }
+
+/* Shop, Nav, etc... (Keep existing) */
 #shop-overlay {
     display: none;
     position: absolute;
@@ -40,142 +126,16 @@ body {
     justify-content: center;
     color: #0f0;
 }
-.shop-section {
-    border: 1px solid #0f0;
-    padding: 10px;
-    margin: 10px;
-    width: 80%;
-    max-width: 400px;
-    background: #001100;
-}
-.shop-item {
-    display: flex;
-    justify-content: space-between;
-    margin: 5px 0;
-    align-items: center;
-}
-button {
-    background: #003300;
-    color: #0f0;
-    border: 1px solid #0f0;
-    padding: 5px 10px;
-    cursor: pointer;
-    font-family: inherit;
-}
-button:active { background: #0f0; color: #000; }
-button:disabled { border-color: #555; color: #555; background: #111; cursor: not-allowed; } 
-
-#next-wave-btn {
-    margin-top: 20px;
-    padding: 15px 30px;
-    font-size: 20px;
-    font-weight: bold;
-    background: #0f0;
-    color: #000;
-}
-
-/* Nav Zones */
-.nav-zone {
-    position: absolute;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 40px;
-    font-weight: bold;
-    color: rgba(0, 255, 0, 0.3);
-    cursor: pointer;
-    z-index: 30;
-    user-select: none;
-    background: transparent;
-    text-shadow: 0 0 10px #000;
-}
+.shop-section { border: 1px solid #0f0; padding: 10px; margin: 10px; width: 80%; max-width: 400px; background: #001100; }
+.shop-item { display: flex; justify-content: space-between; margin: 5px 0; align-items: center; }
+button { background: #003300; color: #0f0; border: 1px solid #0f0; padding: 5px 10px; cursor: pointer; font-family: inherit; }
+#nav-left, #nav-right, #nav-down { position: absolute; z-index: 30; font-size: 40px; font-weight: bold; color: rgba(0,255,0,0.3); display: flex; justify-content: center; align-items: center; user-select: none; cursor: pointer; }
 #nav-left { top: 50%; left: 0; width: 80px; height: 20%; transform: translateY(-50%); }
 #nav-right { top: 50%; right: 0; width: 80px; height: 20%; transform: translateY(-50%); }
 #nav-down { bottom: 0; left: 50%; width: 30%; height: 80px; transform: translateX(-50%); }
-
-#current-dir {
-    position: absolute;
-    top: 10px; width: 100%;
-    text-align: center;
-    font-size: 30px;
-    font-weight: bold;
-    pointer-events: none;
-    z-index: 20;
-    color: #0f0;
-}
-
-.danger-indicator {
-    position: absolute;
-    pointer-events: none;
-    background: red; 
-    opacity: 0;
-    z-index: 15;
-    box-shadow: 0 0 30px red;
-    transition: opacity 0.2s;
-}
+#current-dir { position: absolute; top: 10px; width: 100%; text-align: center; font-size: 30px; font-weight: bold; pointer-events: none; z-index: 20; color: #0f0; }
+.danger-indicator { position: absolute; pointer-events: none; background: red; opacity: 0; z-index: 15; box-shadow: 0 0 30px red; transition: opacity 0.2s; }
 #danger-left { top: 20%; bottom: 20%; left: 0; width: 15px; }
 #danger-right { top: 20%; bottom: 20%; right: 0; width: 15px; }
 #danger-behind { bottom: 0; left: 20%; right: 20%; height: 15px; }
-
-#restart-btn {
-    display: none;
-    position: absolute;
-    top: 60%; left: 50%;
-    transform: translate(-50%, -50%);
-    background: #f00;
-    color: #fff;
-    border: 2px solid #fff;
-    padding: 15px 30px;
-    font-size: 24px;
-    z-index: 100;
-}
-
-/* UPDATED: Vertical Weapon Rack on the Right */
-#weapon-rack {
-    position: absolute;
-    top: 50%;             /* Center vertically */
-    right: 10px;          /* Stick to right edge */
-    transform: translateY(-50%);
-    display: flex;
-    flex-direction: column; /* Stack vertically */
-    gap: 15px;
-    z-index: 60;
-}
-
-.weapon-slot {
-    width: 70px;
-    height: 50px;
-    background: rgba(0, 20, 0, 0.8);
-    border: 2px solid #0f0;
-    color: #0f0;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    font-size: 12px;
-    font-weight: bold;
-    user-select: none;
-    transition: all 0.1s;
-    border-radius: 5px;
-}
-
-.weapon-slot span {
-    font-size: 9px;
-    color: #888;
-    margin-bottom: 3px;
-}
-
-.weapon-slot.active {
-    background: #0f0;
-    color: #000;
-    box-shadow: 0 0 15px #0f0;
-    transform: scale(1.1);
-}
-
-.weapon-slot.locked {
-    border-color: #555;
-    color: #555;
-    background: #111;
-    cursor: not-allowed;
-}
+#restart-btn { display: none; position: absolute; top: 60%; left: 50%; transform: translate(-50%, -50%); background: #f00; color: #fff; border: 2px solid #fff; padding: 15px 30px; font-size: 24px; z-index: 100; }

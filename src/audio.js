@@ -4,9 +4,8 @@ shootSound.volume = 0.4;
 const selectSound = new Audio('./assets/sounds/select.ogg');
 selectSound.volume = 0.6;
 
-// NEW: Hit Sound
 const thudSound = new Audio('./assets/sounds/thud.ogg');
-thudSound.volume = 0.5;
+thudSound.volume = 0.9; // BOOSTED to 90%
 
 export const AudioMgr = {
     playShoot: () => {
@@ -19,10 +18,9 @@ export const AudioMgr = {
         s.volume = 0.6;
         s.play().catch(e => {});
     },
-    // NEW
     playThud: () => {
         const s = thudSound.cloneNode();
-        s.volume = 0.5;
+        s.volume = 0.9; // BOOSTED
         s.play().catch(e => {});
     }
 };

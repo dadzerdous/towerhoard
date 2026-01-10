@@ -15,12 +15,12 @@ renderer.resize(window.innerWidth, window.innerHeight);
 
 // --- HAIKUS (Story Data) ---
 const HAIKUS = [
-    ["You see them coming", "Hungry for your fluffy pet", "Don't let them get close"], // Wave 1
-    ["More of them appear", "The smell of rot in the air", "Keep your aim steady"],   // Wave 2
-    ["Ghosts float in the mist", "Bullets pass right through the fog", "Wait for the clear shot"], // Wave 3
-    ["The earth shakes below", "Giants walk upon the land", "Strike them down quickly"], // Wave 4
-    ["Darkness falls harder", "They are learning how to hunt", "You must be faster"], // Wave 5
-    ["A shadow above", "Wings of death beat in the sky", "The Dragon is here"] // Boss
+    ["You see them coming", "Hungry for your fluffy pet", "Don't let them get close"], 
+    ["More of them appear", "The smell of rot in the air", "Keep your aim steady"],   
+    ["Ghosts float in the mist", "Bullets pass right through the fog", "Wait for the clear shot"], 
+    ["The earth shakes below", "Giants walk upon the land", "Strike them down quickly"], 
+    ["Darkness falls harder", "They are learning how to hunt", "You must be faster"], 
+    ["A shadow above", "Wings of death beat in the sky", "The Dragon is here"] 
 ];
 
 const COST_DAMAGE = 100;
@@ -42,9 +42,9 @@ let player = savedData ? savedData : JSON.parse(JSON.stringify(defaultStats));
 if (!player.unlockedWeapons) player.unlockedWeapons = ['rifle'];
 
 let state = {
-    gameStarted: false, storyOpen: false, // NEW STATE
+    gameStarted: false, storyOpen: false, 
     gold: 0, towerHp: 100, playerHp: 100,
-    wave: 1, waveActive: false, shopOpen: false, // Start inactive for story
+    wave: 1, waveActive: false, shopOpen: false, 
     enemiesSpawned: 0, enemiesToSpawn: 10,
     enemies: [], particles: [],
     dirIndex: 0, directions: ['N', 'E', 'S', 'W'],
@@ -62,46 +62,49 @@ document.getElementById('nav-down').addEventListener('click', () => turn(2));
 canvas.addEventListener('mousedown', shoot);
 canvas.addEventListener('touchend', shoot);
 
-// --- NEW STORY FUNCTIONS ---
+// --- UI FUNCTIONS (Now with Sound!) ---
+
 window.startStoryMode = () => {
+    AudioMgr.playSelect(); // CLICK
     document.getElementById('start-screen').style.display = 'none';
     state.gameStarted = true;
-    showHaiku(0); // Show Wave 1 Haiku
+    showHaiku(0); 
 };
 
 window.dismissStory = () => {
+    AudioMgr.playSelect(); // CLICK
     document.getElementById('story-overlay').style.display = 'none';
     state.storyOpen = false;
-    state.waveActive = true; // Start the wave!
+    state.waveActive = true; 
 };
 
 function showHaiku(waveIndex) {
     state.storyOpen = true;
     state.waveActive = false;
     const overlay = document.getElementById('story-overlay');
-    const lines = HAIKUS[Math.min(waveIndex, HAIKUS.length - 1)]; // Loop last haiku if out of bounds
+    const lines = HAIKUS[Math.min(waveIndex, HAIKUS.length - 1)]; 
     
     document.getElementById('line1').innerText = lines[0];
     document.getElementById('line2').innerText = lines[1];
     document.getElementById('line3').innerText = lines[2];
     
     overlay.style.display = 'flex';
-    // Re-trigger animations
     document.querySelectorAll('.haiku-line').forEach(el => {
         el.style.animation = 'none';
-        el.offsetHeight; /* trigger reflow */
+        el.offsetHeight; 
         el.style.animation = null; 
     });
 }
 
-// (Keep toggleWeaponMenu, selectWeapon, buyWeapon, buyUpgrade, buyTurret...)
 window.toggleWeaponMenu = () => {
+    AudioMgr.playSelect(); // CLICK
     const list = document.getElementById('weapon-list');
     list.classList.toggle('open');
 };
 
 window.selectWeapon = (id) => {
     if (player.unlockedWeapons.includes(id)) {
+        AudioMgr.playSelect(); // CLICK
         state.currentWeapon = id;
         document.getElementById('weapon-list').classList.remove('open');
         let icon = "🔫";
@@ -114,16 +117,36 @@ window.selectWeapon = (id) => {
 window.buyWeapon = (id) => {
     let cost = (id === 'shotgun') ? 200 : 500;
     if (player.xp >= cost && !player.unlockedWeapons.includes(id)) {
+        AudioMgr.playSelect(); // CLICK
         player.xp -= cost;
         player.unlockedWeapons.push(id);
         saveGame();
         updateWeaponUI();
     }
 };
-window.buyUpgrade = (type) => { if (type === 'damage' && player.xp >= COST_DAMAGE) { player.xp -= COST_DAMAGE; player.stats.damage++; saveGame(); }};
-window.buyTurret = () => { let currentDir = state.directions[state.dirIndex]; if (!state.turrets[currentDir] && state.gold >= COST_TURRET) { state.gold -= COST_TURRET; state.turrets[currentDir] = true; updateNavLabels(); updateShopButtons(); }};
+
+window.buyUpgrade = (type) => { 
+    if (type === 'damage' && player.xp >= COST_DAMAGE) { 
+        AudioMgr.playSelect(); // CLICK
+        player.xp -= COST_DAMAGE; 
+        player.stats.damage++; 
+        saveGame(); 
+    }
+};
+
+window.buyTurret = () => { 
+    let currentDir = state.directions[state.dirIndex]; 
+    if (!state.turrets[currentDir] && state.gold >= COST_TURRET) { 
+        AudioMgr.playSelect(); // CLICK
+        state.gold -= COST_TURRET; 
+        state.turrets[currentDir] = true; 
+        updateNavLabels(); 
+        updateShopButtons(); 
+    }
+};
 
 window.nextWave = () => {
+    AudioMgr.playSelect(); // CLICK
     document.getElementById('shop-overlay').style.display = 'none';
     state.shopOpen = false;
     startNextWave();
@@ -134,8 +157,6 @@ function startNextWave() {
     state.enemiesSpawned = 0;
     state.enemiesToSpawn = 10 + (state.wave * 2); 
     state.enemies = [];
-    
-    // Show Story BEFORE wave starts
     showHaiku(state.wave - 1);
     saveGame();
 }

@@ -8,6 +8,12 @@
 </head>
 <body>
 
+    <div id="start-screen">
+        <h1>SNIPER DEFENSE</h1>
+        <p>Defend the Tower. Survive the Night.</p>
+        <button id="start-btn" onclick="window.startGame()">DEPLOY</button>
+    </div>
+
     <div id="ui-layer">
         <div>LVL: <span id="lvlVal">1</span> <span style="font-size:12px; color:#aaa;">(XP: <span id="xpVal">0</span>)</span></div>
         <div>GOLD: <span id="scoreVal">0</span></div>
@@ -18,20 +24,18 @@
     </div>
 
     <div id="weapon-rack">
-        <div class="weapon-slot active" id="slot-rifle" onclick="window.selectWeapon('rifle')">
-            <span>1</span> RIFLE
+        <div id="weapon-toggle" onclick="window.toggleWeaponMenu()">
+            🔫
         </div>
-        <div class="weapon-slot locked" id="slot-shotgun" onclick="window.selectWeapon('shotgun')">
-            <span>2</span> SHOTGUN
-        </div>
-        <div class="weapon-slot locked" id="slot-sniper" onclick="window.selectWeapon('sniper')">
-            <span>3</span> 50 CAL
+        <div id="weapon-list">
+            <div class="weapon-slot active" id="slot-rifle" onclick="window.selectWeapon('rifle')">RIFLE</div>
+            <div class="weapon-slot locked" id="slot-shotgun" onclick="window.selectWeapon('shotgun')">SHOTGUN</div>
+            <div class="weapon-slot locked" id="slot-sniper" onclick="window.selectWeapon('sniper')">50 CAL</div>
         </div>
     </div>
 
     <div id="shop-overlay">
         <h2>WAVE COMPLETE</h2>
-        
         <div class="shop-section">
             <h3>ARSENAL (XP)</h3>
             <div class="shop-item" id="shop-shotgun">
@@ -43,7 +47,6 @@
                 <button onclick="window.buyWeapon('sniper')">500 XP</button>
             </div>
         </div>
-
         <div class="shop-section">
             <h3>UPGRADES (XP)</h3>
             <div class="shop-item" onclick="window.buyUpgrade('damage')">
@@ -51,7 +54,6 @@
                 <button id="btn-damage">100 XP</button>
             </div>
         </div>
-
         <div class="shop-section">
             <h3>TOWER DEFENSE (GOLD)</h3>
             <div class="shop-item" onclick="window.buyTurret()">
@@ -59,7 +61,6 @@
                 <button id="btn-turret">100 G</button>
             </div>
         </div>
-
         <button id="next-wave-btn" onclick="window.nextWave()">START NEXT WAVE</button>
     </div>
 
@@ -73,7 +74,6 @@
     <div id="nav-left" class="nav-zone">W</div>
     <div id="nav-right" class="nav-zone">E</div>
     <div id="nav-down" class="nav-zone">S</div>
-
     <button id="restart-btn" onclick="location.reload()">TRY AGAIN</button>
 
     <script type="module" src="src/game.js"></script>

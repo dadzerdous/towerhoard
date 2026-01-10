@@ -11,11 +11,10 @@ body {
     display: block;
     position: absolute;
     top: 0; left: 0;
-    width: 100vw; height: 100vh;
+    /* Removed 100vw/vh to let JS control exact pixels for Aspect Ratio fix */
     cursor: crosshair;
 }
 
-/* UI Layer - NOW Z-INDEX 60 to sit ABOVE the shop */
 #ui-layer {
     position: absolute;
     top: 20px; left: 20px;
@@ -24,12 +23,12 @@ body {
     text-shadow: 0 0 5px #0f0;
     z-index: 60; 
     line-height: 1.4;
-    background: rgba(0,0,0,0.5); /* Slight dark backing to read easier */
+    background: rgba(0,0,0,0.5);
     padding: 10px;
     border-radius: 8px;
 }
 
-/* Shop Menu - Z-INDEX 50 */
+/* Shop Menu */
 #shop-overlay {
     display: none;
     position: absolute;
@@ -64,7 +63,7 @@ button {
     font-family: inherit;
 }
 button:active { background: #0f0; color: #000; }
-button:disabled { border-color: #555; color: #555; background: #111; cursor: not-allowed; } /* Disabled style */
+button:disabled { border-color: #555; color: #555; background: #111; cursor: not-allowed; } 
 
 #next-wave-btn {
     margin-top: 20px;
@@ -105,7 +104,6 @@ button:disabled { border-color: #555; color: #555; background: #111; cursor: not
     color: #0f0;
 }
 
-/* Danger Indicators - Back to CSS Bars */
 .danger-indicator {
     position: absolute;
     pointer-events: none;
@@ -131,20 +129,22 @@ button:disabled { border-color: #555; color: #555; background: #111; cursor: not
     font-size: 24px;
     z-index: 100;
 }
-/* Add this to your CSS */
 
+/* UPDATED: Vertical Weapon Rack on the Right */
 #weapon-rack {
     position: absolute;
-    bottom: 20px;
-    right: 20px;
+    top: 50%;             /* Center vertically */
+    right: 10px;          /* Stick to right edge */
+    transform: translateY(-50%);
     display: flex;
-    gap: 10px;
+    flex-direction: column; /* Stack vertically */
+    gap: 15px;
     z-index: 60;
 }
 
 .weapon-slot {
-    width: 80px;
-    height: 60px;
+    width: 70px;
+    height: 50px;
     background: rgba(0, 20, 0, 0.8);
     border: 2px solid #0f0;
     color: #0f0;
@@ -153,16 +153,17 @@ button:disabled { border-color: #555; color: #555; background: #111; cursor: not
     justify-content: center;
     align-items: center;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 12px;
     font-weight: bold;
     user-select: none;
     transition: all 0.1s;
+    border-radius: 5px;
 }
 
 .weapon-slot span {
-    font-size: 10px;
+    font-size: 9px;
     color: #888;
-    margin-bottom: 5px;
+    margin-bottom: 3px;
 }
 
 .weapon-slot.active {
@@ -177,13 +178,4 @@ button:disabled { border-color: #555; color: #555; background: #111; cursor: not
     color: #555;
     background: #111;
     cursor: not-allowed;
-}
-
-/* Adjust nav-down so it doesn't overlap weapons */
-#nav-down { 
-    bottom: 0; 
-    left: 50%; 
-    width: 30%; 
-    height: 80px; 
-    transform: translateX(-50%); 
 }

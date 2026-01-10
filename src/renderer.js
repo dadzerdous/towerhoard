@@ -11,14 +11,22 @@ export class Renderer {
         this.height = h;
         this.canvas.width = w;
         this.canvas.height = h;
+        // FIX: Force CSS to match pixels prevents "Ovals" on mobile
+        this.canvas.style.width = w + 'px';
+        this.canvas.style.height = h + 'px';
     }
 
     clear() {
-        this.ctx.fillStyle = "#1a1a1a"; 
-        this.ctx.fillRect(0, 0, this.width, this.height);
+        // SKY (Dark Grey)
+        this.ctx.fillStyle = "#222"; 
+        this.ctx.fillRect(0, 0, this.width, this.height / 2);
+
+        // GROUND (Pitch Black)
+        this.ctx.fillStyle = "#000"; 
+        this.ctx.fillRect(0, this.height / 2, this.width, this.height / 2);
         
-        // Draw Horizon
-        this.ctx.strokeStyle = '#222';
+        // Horizon Line
+        this.ctx.strokeStyle = '#444';
         this.ctx.lineWidth = 1;
         this.ctx.beginPath();
         this.ctx.moveTo(0, this.height/2); 
@@ -29,7 +37,7 @@ export class Renderer {
     drawScope(aimX, aimY, scopeSize, recoilY) {
         const radius = (this.height * 0.22) * scopeSize;
         const rx = aimX;
-        const ry = aimY - recoilY; // Apply visual recoil
+        const ry = aimY - recoilY; 
 
         this.ctx.save();
         this.ctx.beginPath();
@@ -68,7 +76,6 @@ export class Renderer {
     drawParticles(particles) {
         for (let i = particles.length - 1; i >= 0; i--) {
             let p = particles[i];
-            // Update physics here for simplicity
             p.life -= 0.02;
             p.x += p.vx;
             p.y += p.vy;

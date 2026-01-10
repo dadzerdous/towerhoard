@@ -31,6 +31,19 @@ body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Courie
     font-size: 14px;
 }
 
+#victory-screen {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 20, 0, 0.98);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 2100;
+    color: #0f0;
+    text-align: center;
+}
+
 .menu-btn {
     background: transparent;
     border: 2px solid #0f0;
@@ -101,6 +114,23 @@ button:disabled { border-color: #555; color: #555; background: #111; cursor: not
     position: relative; /* Needed for absolute overlay */
     overflow: hidden; /* Clips the cooldown overlay */
 }
+
+/* SKILL BUTTON */
+#skill-container { position: relative; width: 80px; height: 40px; margin-bottom: 10px; }
+#skill-btn {
+    width: 100%; height: 100%;
+    background: #003300; border: 2px solid #ff0; color: #ff0;
+    display: flex; justify-content: center; align-items: center;
+    font-size: 12px; font-weight: bold; cursor: pointer;
+    box-shadow: 0 0 10px #ff0; user-select: none;
+}
+#skill-btn:active { background: #ff0; color: #000; }
+#skill-cooldown {
+    position: absolute; bottom: 0; left: 0; width: 100%; height: 0%;
+    background: rgba(0,0,0,0.7); pointer-events: none;
+    transition: height 0.1s linear;
+}
+
 
 /* NEW: Cooldown Overlay */
 #weapon-cooldown {

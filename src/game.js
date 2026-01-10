@@ -8,7 +8,6 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const renderer = new Renderer(canvas, ctx);
 
-// --- SETUP ---
 window.addEventListener('resize', () => {
     renderer.resize(window.innerWidth, window.innerHeight);
 });
@@ -17,11 +16,10 @@ renderer.resize(window.innerWidth, window.innerHeight);
 const COST_DAMAGE = 100;
 const COST_TURRET = 100;
 
-// ADDED: scopeScale logic
 const WEAPONS = {
     rifle: { name: "Rifle", damageMult: 1, cooldown: 0, recoil: 15, scopeScale: 1.0 },
-    shotgun: { name: "Shotgun", damageMult: 0.5, cooldown: 800, recoil: 80, scopeScale: 1.3 }, // WIDE SCOPE
-    sniper: { name: "50 Cal", damageMult: 5, cooldown: 1500, recoil: 60, scopeScale: 0.8 }   // TIGHT SCOPE
+    shotgun: { name: "Shotgun", damageMult: 0.5, cooldown: 800, recoil: 80, scopeScale: 1.3 },
+    sniper: { name: "50 Cal", damageMult: 5, cooldown: 1500, recoil: 60, scopeScale: 0.8 }
 };
 
 const defaultStats = {
@@ -34,6 +32,7 @@ let player = savedData ? savedData : JSON.parse(JSON.stringify(defaultStats));
 if (!player.unlockedWeapons) player.unlockedWeapons = ['rifle'];
 
 let state = {
+    gameStarted: false, // NEW: Start Screen Logic
     gold: 0, towerHp: 100, playerHp: 100,
     wave: 1, waveActive: true, shopOpen: false,
     enemiesSpawned: 0, enemiesToSpawn: 10,
@@ -41,23 +40,43 @@ let state = {
     dirIndex: 0, directions: ['N', 'E', 'S', 'W'],
     turrets: { 'N': false, 'E': false, 'S': false, 'W': false },
     turretTimer: 0, gameOver: false,
-    currentWeapon: 'rifle', lastShotTime: 0, recoilY: 0
+    currentWeapon: 'rifle', lastShotTime: 0, recoilY: 0,
+    targetLocked: false // NEW: For yellow scope ring
 };
 
 const input = new InputHandler(canvas);
 
-// --- CONTROLS ---
 document.getElementById('nav-left').addEventListener('click', () => turn(-1));
 document.getElementById('nav-right').addEventListener('click', () => turn(1));
 document.getElementById('nav-down').addEventListener('click', () => turn(2));
 canvas.addEventListener('mousedown', shoot);
 canvas.addEventListener('touchend', shoot);
 
+// --- NEW UI FUNCTIONS ---
+window.startGame = () => {
+    document.getElementById('start-screen').style.display = 'none';
+    state.gameStarted = true;
+    AudioMgr.playShoot(); // Test sound
+};
+
+window.toggleWeaponMenu = () => {
+    const list = document.getElementById('weapon-list');
+    if (list.style.display === 'flex') {
+        list.style.display = 'none';
+    } else {
+        list.style.display = 'flex';
+    }
+};
+
 window.selectWeapon = (id) => {
     if (player.unlockedWeapons.includes(id)) {
         state.currentWeapon = id;
-        document.querySelectorAll('.weapon-slot').forEach(el => el.classList.remove('active'));
-        document.getElementById(`slot-${id}`).classList.add('active');
+        document.getElementById('weapon-list').style.display = 'none'; // Auto close
+        // Update Toggle Icon (Simplified)
+        let icon = "🔫";
+        if(id === 'shotgun') icon = "💥";
+        if(id === 'sniper') icon = "🔭";
+        document.getElementById('weapon-toggle').innerText = icon;
     }
 };
 
@@ -70,7 +89,7 @@ window.buyWeapon = (id) => {
         updateWeaponUI();
     }
 };
-
+// (Keep buyUpgrade, buyTurret, nextWave as before)
 window.buyUpgrade = (type) => {
     if (type === 'damage' && player.xp >= COST_DAMAGE) {
         player.xp -= COST_DAMAGE;
@@ -78,7 +97,6 @@ window.buyUpgrade = (type) => {
         saveGame();
     }
 };
-
 window.buyTurret = () => {
     let currentDir = state.directions[state.dirIndex];
     if (!state.turrets[currentDir] && state.gold >= COST_TURRET) {
@@ -88,14 +106,11 @@ window.buyTurret = () => {
         updateShopButtons(); 
     }
 };
-
 window.nextWave = () => {
     document.getElementById('shop-overlay').style.display = 'none';
     state.shopOpen = false;
     startNextWave();
 };
-
-// --- LOGIC ---
 
 function turn(dirChange) {
     state.dirIndex = (state.dirIndex + dirChange + 4) % 4;
@@ -104,7 +119,7 @@ function turn(dirChange) {
 }
 
 function shoot() {
-    if (state.gameOver || !state.waveActive || state.shopOpen) return;
+    if (!state.gameStarted || state.gameOver || !state.waveActive || state.shopOpen) return;
 
     let now = Date.now();
     let weapon = WEAPONS[state.currentWeapon];
@@ -112,7 +127,6 @@ function shoot() {
 
     state.lastShotTime = now;
     AudioMgr.playShoot(); 
-
     state.recoilY = weapon.recoil;
     renderer.drawMuzzleFlash(); 
 
@@ -124,21 +138,16 @@ function shoot() {
     checkHit(aim.x, aim.y, finalDmg, true, hitRadiusMult);
 }
 
+// Check Hit (Damage)
 function checkHit(x, y, dmg, isPlayer, radiusMult = 1.0) {
     let piercing = (state.currentWeapon === 'sniper');
     let hitCount = 0;
-
     for (let i = state.enemies.length - 1; i >= 0; i--) {
         let e = state.enemies[i];
-        
         if (isPlayer && e.view !== state.directions[state.dirIndex]) continue;
-
         let scale = (100 - e.distance) / 10;
         let drawY = e.y + ((100 - e.distance) * (canvas.height/300));
-        
-        // HITBOX FIX: Drastically reduced base size from 30 to 6
-        // This requires precise aiming near the center (crosshair)
-        let size = (6 * scale) * radiusMult; 
+        let size = (8 * scale) * radiusMult; // Slightly forgiving hitbox
         
         let hit = false;
         if (isPlayer) {
@@ -149,7 +158,7 @@ function checkHit(x, y, dmg, isPlayer, radiusMult = 1.0) {
         if (hit) {
             e.hp -= dmg; 
             if (e.hp <= 0) {
-                spawnExplosion(e.x, drawY, isPlayer ? "#f00" : "#0f0");
+                spawnExplosion(e.x, drawY, e.color); // Use enemy color for boom
                 state.enemies.splice(i, 1);
                 player.xp += e.xpValue;
                 state.gold += 10;
@@ -157,10 +166,28 @@ function checkHit(x, y, dmg, isPlayer, radiusMult = 1.0) {
                 spawnFloatingText(`+$10`, e.x, drawY - 40, "#ff0");
                 saveGame();
             }
-            
             hitCount++;
             if (!piercing) break; 
             if (piercing && hitCount >= 3) break; 
+        }
+    }
+}
+
+// NEW: Check Target Lock (Visual Only - No Damage)
+function checkTargetLock(aimX, aimY) {
+    state.targetLocked = false;
+    for (let i = 0; i < state.enemies.length; i++) {
+        let e = state.enemies[i];
+        if (e.view !== state.directions[state.dirIndex]) continue;
+        
+        let scale = (100 - e.distance) / 10;
+        let drawY = e.y + ((100 - e.distance) * (canvas.height/300));
+        let size = (12 * scale); // Visual detection radius slightly larger than hit radius
+        let dist = Math.hypot(e.x - aimX, drawY - aimY);
+        
+        if (dist < size) {
+            state.targetLocked = true;
+            return;
         }
     }
 }
@@ -179,7 +206,7 @@ function fireTurrets() {
             if (target) {
                 target.hp -= 2;
                 if (target.hp <= 0) {
-                     spawnExplosion(target.x, canvas.height/2 + 50, "#0f0");
+                     spawnExplosion(target.x, canvas.height/2 + 50, target.color);
                      state.enemies = state.enemies.filter(e => e !== target);
                      player.xp += 5; state.gold += 5;
                 }
@@ -188,72 +215,17 @@ function fireTurrets() {
     });
 }
 
-function spawnFloatingText(text, x, y, color) {
-    state.particles.push({ type: 0, text, x, y, life: 1.0, color, vy: -1, vx: 0 });
-}
+// ... spawnFloatingText, spawnExplosion, startNextWave, openShop ...
+// (These helpers remain unchanged from previous versions, copying essential logic below for completeness)
 
-function spawnExplosion(x, y, color) {
-    for(let k=0; k<15; k++) {
-        state.particles.push({ 
-            type: 1, x, y, life: 1.0, color, 
-            vx: (Math.random() - 0.5) * 10, vy: (Math.random() - 0.5) * 10 
-        });
-    }
-}
-
-// --- HELPERS ---
-function startNextWave() {
-    state.wave++;
-    state.enemiesSpawned = 0;
-    state.enemiesToSpawn = 10 + (state.wave * 2); 
-    state.enemies = [];
-    state.waveActive = true;
-    saveGame();
-}
-
-function openShop() {
-    state.shopOpen = true;
-    document.getElementById('shop-overlay').style.display = 'flex';
-    document.getElementById('btn-damage').innerText = `${COST_DAMAGE} XP`;
-    updateShopButtons(); updateWeaponUI();
-}
-
-function updateWeaponUI() {
-    if (!player.unlockedWeapons) return;
-    player.unlockedWeapons.forEach(id => {
-        const el = document.getElementById(`slot-${id}`);
-        if(el) el.classList.remove('locked');
-    });
-    if(player.unlockedWeapons.includes('shotgun')) document.getElementById('shop-shotgun').style.display = 'none';
-    if(player.unlockedWeapons.includes('sniper')) document.getElementById('shop-sniper').style.display = 'none';
-}
-
-function updateShopButtons() {
-    let currentDir = state.directions[state.dirIndex];
-    const btn = document.getElementById('btn-turret');
-    if (state.turrets[currentDir]) {
-        btn.innerText = "OWNED"; btn.disabled = true; btn.style.color = "#888"; btn.style.borderColor = "#888";
-    } else {
-        btn.innerText = `${COST_TURRET} G`; btn.disabled = false; btn.style.color = "#0f0"; btn.style.borderColor = "#0f0";
-    }
-}
-
-function updateNavLabels() {
-    let cur = state.directions[state.dirIndex];
-    const getIcon = (dir) => state.turrets[dir] ? "🤖" : "";
-    document.getElementById('current-dir').innerHTML = cur + (state.turrets[cur] ? " <span style='font-size:20px'>🤖</span>" : "");
-    const leftIndex = (state.dirIndex + 3) % 4;
-    const rightIndex = (state.dirIndex + 1) % 4;
-    const backIndex = (state.dirIndex + 2) % 4;
-    document.getElementById('nav-left').innerText = state.directions[leftIndex] + getIcon(state.directions[leftIndex]);
-    document.getElementById('nav-right').innerText = state.directions[rightIndex] + getIcon(state.directions[rightIndex]);
-    document.getElementById('nav-down').innerText = state.directions[backIndex] + getIcon(state.directions[backIndex]);
-}
-
-function saveGame() {
-    player.highWave = Math.max(player.highWave, state.wave);
-    Storage.save(player);
-}
+function spawnFloatingText(text, x, y, color) { state.particles.push({ type: 0, text, x, y, life: 1.0, color, vy: -1, vx: 0 }); }
+function spawnExplosion(x, y, color) { for(let k=0; k<15; k++) { state.particles.push({ type: 1, x, y, life: 1.0, color, vx: (Math.random() - 0.5) * 10, vy: (Math.random() - 0.5) * 10 }); }}
+function startNextWave() { state.wave++; state.enemiesSpawned = 0; state.enemiesToSpawn = 10 + (state.wave * 2); state.enemies = []; state.waveActive = true; saveGame(); }
+function openShop() { state.shopOpen = true; document.getElementById('shop-overlay').style.display = 'flex'; document.getElementById('btn-damage').innerText = `${COST_DAMAGE} XP`; updateShopButtons(); updateWeaponUI(); }
+function updateWeaponUI() { if (!player.unlockedWeapons) return; player.unlockedWeapons.forEach(id => { const el = document.getElementById(`slot-${id}`); if(el) el.classList.remove('locked'); }); if(player.unlockedWeapons.includes('shotgun')) document.getElementById('shop-shotgun').style.display = 'none'; if(player.unlockedWeapons.includes('sniper')) document.getElementById('shop-sniper').style.display = 'none'; }
+function updateShopButtons() { let currentDir = state.directions[state.dirIndex]; const btn = document.getElementById('btn-turret'); if (state.turrets[currentDir]) { btn.innerText = "OWNED"; btn.disabled = true; btn.style.color = "#888"; btn.style.borderColor = "#888"; } else { btn.innerText = `${COST_TURRET} G`; btn.disabled = false; btn.style.color = "#0f0"; btn.style.borderColor = "#0f0"; } }
+function updateNavLabels() { let cur = state.directions[state.dirIndex]; const getIcon = (dir) => state.turrets[dir] ? "🤖" : ""; document.getElementById('current-dir').innerHTML = cur + (state.turrets[cur] ? " <span style='font-size:20px'>🤖</span>" : ""); const leftIndex = (state.dirIndex + 3) % 4; const rightIndex = (state.dirIndex + 1) % 4; const backIndex = (state.dirIndex + 2) % 4; document.getElementById('nav-left').innerText = state.directions[leftIndex] + getIcon(state.directions[leftIndex]); document.getElementById('nav-right').innerText = state.directions[rightIndex] + getIcon(state.directions[rightIndex]); document.getElementById('nav-down').innerText = state.directions[backIndex] + getIcon(state.directions[backIndex]); }
+function saveGame() { player.highWave = Math.max(player.highWave, state.wave); Storage.save(player); }
 
 // --- MAIN LOOP ---
 let lastTime = 0;
@@ -266,7 +238,7 @@ function gameLoop(timestamp) {
 
     if (input.update()) shoot();
 
-    if (state.shopOpen) {
+    if (state.shopOpen || !state.gameStarted) {
         requestAnimationFrame(gameLoop);
         return; 
     }
@@ -291,12 +263,8 @@ function gameLoop(timestamp) {
             state.waveActive = false;
             openShop();
         }
-        
         state.turretTimer += dt;
-        if (state.turretTimer > 2000) {
-            fireTurrets();
-            state.turretTimer = 0;
-        }
+        if (state.turretTimer > 2000) { fireTurrets(); state.turretTimer = 0; }
     }
 
     state.enemies.sort((a, b) => b.distance - a.distance);
@@ -304,7 +272,6 @@ function gameLoop(timestamp) {
     for (let i = state.enemies.length - 1; i >= 0; i--) {
         let e = state.enemies[i];
         e.update();
-        
         if (e.distance <= 0) {
             let enemyDir = e.view;
             let currentDir = state.directions[state.dirIndex];
@@ -317,7 +284,6 @@ function gameLoop(timestamp) {
             state.enemies.splice(i, 1);
             if (state.towerHp <= 0 || state.playerHp <= 0) state.gameOver = true;
         }
-
         if (e.view === state.directions[state.dirIndex]) {
             e.draw(ctx, renderer.width, renderer.height);
         }
@@ -327,11 +293,15 @@ function gameLoop(timestamp) {
     renderer.updateIndicators(state.enemies, state.dirIndex, state.directions);
     renderer.updateUI(player, state, state.enemiesToSpawn);
 
-    // DYNAMIC SCOPE SIZE
     if (state.recoilY > 0) state.recoilY *= 0.8; 
     const aim = input.getAim();
     const weaponScale = WEAPONS[state.currentWeapon].scopeScale || 1.0;
-    renderer.drawScope(aim.x, aim.y, player.stats.scopeSize * weaponScale, state.recoilY);
+    
+    // NEW: Check lock
+    checkTargetLock(aim.x, aim.y);
+    
+    // Pass targetLocked to renderer for the yellow glow
+    renderer.drawScope(aim.x, aim.y, player.stats.scopeSize * weaponScale, state.recoilY, state.targetLocked);
 
     requestAnimationFrame(gameLoop);
 }

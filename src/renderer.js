@@ -34,18 +34,17 @@ export class Renderer {
         this.ctx.stroke();
     }
 
-    drawScope(aimX, aimY, scopeSize, recoilY) {
+drawScope(aimX, aimY, scopeSize, recoilY, isLocked) {
         const radius = (this.height * 0.22) * scopeSize;
         const rx = aimX;
         const ry = aimY - recoilY; 
 
+        // Draw Scope Mask (Same as before)
         this.ctx.save();
         this.ctx.beginPath();
         this.ctx.rect(0, 0, this.width, this.height); 
         this.ctx.arc(rx, ry, radius, 0, Math.PI*2, true); 
         this.ctx.clip();
-        
-        // Void outside scope
         this.ctx.fillStyle = "#000";
         this.ctx.fillRect(0, 0, this.width, this.height);
         this.ctx.restore();
@@ -56,7 +55,16 @@ export class Renderer {
         this.ctx.beginPath();
         this.ctx.arc(rx, ry, radius, 0, Math.PI*2);
         this.ctx.stroke();
-        
+
+        // --- NEW: YELLOW LOCK INDICATOR ---
+        if (isLocked) {
+            this.ctx.strokeStyle = "rgba(255, 255, 0, 0.8)"; // Yellow Glow
+            this.ctx.lineWidth = 4;
+            this.ctx.beginPath();
+            this.ctx.arc(rx, ry, radius + 8, 0, Math.PI*2); // Outside rim
+            this.ctx.stroke();
+        }
+
         // Inner Green Line
         this.ctx.strokeStyle = "#0f0"; 
         this.ctx.lineWidth = 1;
@@ -64,8 +72,8 @@ export class Renderer {
         this.ctx.arc(rx, ry, radius - 5, 0, Math.PI*2);
         this.ctx.stroke();
 
-        // Red Crosshair
-        this.ctx.strokeStyle = "rgba(255, 0, 0, 0.9)";
+        // Crosshair
+        this.ctx.strokeStyle = isLocked ? "yellow" : "rgba(255, 0, 0, 0.9)"; // Turn crosshair yellow too
         this.ctx.lineWidth = 1;
         this.ctx.beginPath();
         this.ctx.moveTo(rx - 10, ry); this.ctx.lineTo(rx + 10, ry);

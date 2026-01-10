@@ -4,84 +4,86 @@ export class Renderer {
         this.ctx = ctx;
         this.width = canvas.width;
         this.height = canvas.height;
-        this.damageFlashTimer = 0; // For red flash
+        this.damageFlashTimer = 0;
     }
 
     resize(w, h) {
-        this.width = w;
-        this.height = h;
-        this.canvas.width = w;
-        this.canvas.height = h;
-        this.canvas.style.width = w + 'px';
-        this.canvas.style.height = h + 'px';
+        this.width = w; this.height = h;
+        this.canvas.width = w; this.canvas.height = h;
+        this.canvas.style.width = w + 'px'; this.canvas.style.height = h + 'px';
     }
 
-    triggerDamageFlash() {
-        this.damageFlashTimer = 1.0; // Reset to full brightness
-    }
+    triggerDamageFlash() { this.damageFlashTimer = 1.0; }
 
     clear() {
-        // SKY
-        this.ctx.fillStyle = "#222"; 
-        this.ctx.fillRect(0, 0, this.width, this.height / 2);
-
-        // GROUND
-        this.ctx.fillStyle = "#000"; 
-        this.ctx.fillRect(0, this.height / 2, this.width, this.height / 2);
-        
-        // Horizon
-        this.ctx.strokeStyle = '#444';
-        this.ctx.lineWidth = 1;
-        this.ctx.beginPath();
-        this.ctx.moveTo(0, this.height/2); 
-        this.ctx.lineTo(this.width, this.height/2);
+        this.ctx.fillStyle = "#222"; this.ctx.fillRect(0, 0, this.width, this.height / 2);
+        this.ctx.fillStyle = "#000"; this.ctx.fillRect(0, this.height / 2, this.width, this.height / 2);
+        this.ctx.strokeStyle = '#444'; this.ctx.lineWidth = 1;
+        this.ctx.beginPath(); this.ctx.moveTo(0, this.height/2); this.ctx.lineTo(this.width, this.height/2);
         this.ctx.stroke();
+    }
+
+    // NEW: Castle Drawing
+    drawCastle(progress, isActiveDirection) {
+        if (!isActiveDirection || progress === 0) return;
+
+        const cx = this.width / 2;
+        const cy = this.height / 2;
+        
+        // Progress 1 = Small Box, 5 = Huge Castle
+        const size = 10 + (progress * 15); 
+        
+        this.ctx.save();
+        this.ctx.fillStyle = "#111"; // Silhouette color
+        this.ctx.strokeStyle = "#333";
+        
+        // Simple shape based on progress
+        this.ctx.beginPath();
+        if (progress < 3) {
+            // Simple House
+            this.ctx.fillRect(cx - size/2, cy - size, size, size);
+            this.ctx.moveTo(cx - size/2, cy - size);
+            this.ctx.lineTo(cx, cy - size - (size/2));
+            this.ctx.lineTo(cx + size/2, cy - size);
+        } else {
+            // Castle (Towers)
+            this.ctx.fillRect(cx - size, cy - size/2, size*2, size/2); // Base
+            this.ctx.fillRect(cx - size, cy - size, size/3, size); // Left Tower
+            this.ctx.fillRect(cx + size*0.66, cy - size, size/3, size); // Right Tower
+        }
+        this.ctx.stroke();
+        this.ctx.fill();
+        this.ctx.restore();
     }
 
     drawScope(aimX, aimY, scopeSize, recoilY, isLocked) {
         const radius = (this.height * 0.22) * scopeSize;
-        const rx = aimX;
-        const ry = aimY - recoilY; 
+        const rx = aimX; const ry = aimY - recoilY; 
 
-        // 1. BLACK OVERLAY (The Darkness)
         this.ctx.save();
-        this.ctx.beginPath();
-        this.ctx.rect(0, 0, this.width, this.height); 
-        this.ctx.arc(rx, ry, radius, 0, Math.PI*2, true); // Cut hole
+        this.ctx.beginPath(); this.ctx.rect(0, 0, this.width, this.height); 
+        this.ctx.arc(rx, ry, radius, 0, Math.PI*2, true); 
         this.ctx.clip();
         
-        this.ctx.fillStyle = "#000";
-        this.ctx.fillRect(0, 0, this.width, this.height);
+        this.ctx.fillStyle = "#000"; this.ctx.fillRect(0, 0, this.width, this.height);
 
-        // 2. DAMAGE FLASH (Red tint in darkness only)
         if (this.damageFlashTimer > 0) {
             this.ctx.fillStyle = `rgba(255, 0, 0, ${this.damageFlashTimer * 0.3})`;
             this.ctx.fillRect(0, 0, this.width, this.height);
-            this.damageFlashTimer -= 0.05; // Fade out
+            this.damageFlashTimer -= 0.05; 
         }
         this.ctx.restore();
 
-        // 3. SCOPE RIMS
-        this.ctx.strokeStyle = "#002200"; 
-        this.ctx.lineWidth = 10;
-        this.ctx.beginPath();
-        this.ctx.arc(rx, ry, radius, 0, Math.PI*2);
-        this.ctx.stroke();
+        this.ctx.strokeStyle = "#002200"; this.ctx.lineWidth = 10;
+        this.ctx.beginPath(); this.ctx.arc(rx, ry, radius, 0, Math.PI*2); this.ctx.stroke();
 
         if (isLocked) {
-            this.ctx.strokeStyle = "rgba(255, 255, 0, 0.8)"; 
-            this.ctx.lineWidth = 4;
-            this.ctx.beginPath();
-            this.ctx.arc(rx, ry, radius + 8, 0, Math.PI*2);
-            this.ctx.stroke();
+            this.ctx.strokeStyle = "rgba(255, 255, 0, 0.8)"; this.ctx.lineWidth = 4;
+            this.ctx.beginPath(); this.ctx.arc(rx, ry, radius + 8, 0, Math.PI*2); this.ctx.stroke();
         }
 
-        // Inner Lines
-        this.ctx.strokeStyle = "#0f0"; 
-        this.ctx.lineWidth = 1;
-        this.ctx.beginPath();
-        this.ctx.arc(rx, ry, radius - 5, 0, Math.PI*2);
-        this.ctx.stroke();
+        this.ctx.strokeStyle = "#0f0"; this.ctx.lineWidth = 1;
+        this.ctx.beginPath(); this.ctx.arc(rx, ry, radius - 5, 0, Math.PI*2); this.ctx.stroke();
 
         this.ctx.strokeStyle = isLocked ? "yellow" : "rgba(255, 0, 0, 0.9)";
         this.ctx.lineWidth = 1;
@@ -91,37 +93,24 @@ export class Renderer {
         this.ctx.stroke();
     }
 
-    // UPDATED: Yellow Lines OUTSIDE Scope
     drawEnemyGuides(enemies, currentDirIndex, directions, aim, scopeSize) {
         const radius = (this.height * 0.22) * scopeSize;
-
         this.ctx.save();
-        
-        // CLIP: Create a region that is Everything MINUS the Scope Circle
-        // This ensures lines are NOT drawn inside the scope
-        this.ctx.beginPath();
-        this.ctx.rect(0, 0, this.width, this.height); // Whole screen
-        this.ctx.arc(aim.x, aim.y, radius, 0, Math.PI*2, true); // Punch hole
+        this.ctx.beginPath(); this.ctx.rect(0, 0, this.width, this.height); 
+        this.ctx.arc(aim.x, aim.y, radius, 0, Math.PI*2, true); 
         this.ctx.clip();
 
-        // GLOW EFFECT
-        this.ctx.shadowBlur = 15;
-        this.ctx.shadowColor = "yellow";
+        this.ctx.shadowBlur = 15; this.ctx.shadowColor = "yellow";
 
         enemies.forEach(e => {
             if (e.view === directions[currentDirIndex] && e.distance > 0) {
                 let scale = (100 - e.distance) / 10;
                 let drawY = e.y + ((100 - e.distance) * (this.height/300));
-                
-                this.ctx.strokeStyle = "rgba(255, 255, 0, 0.5)"; 
-                this.ctx.lineWidth = 2;
-                this.ctx.beginPath();
-                this.ctx.moveTo(this.width / 2, this.height); // Start bottom center
-                this.ctx.lineTo(e.x, drawY + 20); // Draw to enemy feet
-                this.ctx.stroke();
+                this.ctx.strokeStyle = "rgba(255, 255, 0, 0.5)"; this.ctx.lineWidth = 2;
+                this.ctx.beginPath(); this.ctx.moveTo(this.width / 2, this.height); 
+                this.ctx.lineTo(e.x, drawY + 20); this.ctx.stroke();
             }
         });
-        
         this.ctx.restore();
     }
 
@@ -153,12 +142,7 @@ export class Renderer {
             else if (diff === -1) closestL = Math.max(closestL, danger);
             else if (Math.abs(diff) === 2) closestB = Math.max(closestB, danger);
         });
-        // We use Math.max to allow damage flashes (value > 1) to override normal detection
-        let elL = document.getElementById('danger-left');
-        let elR = document.getElementById('danger-right');
-        let elB = document.getElementById('danger-behind');
-        
-        // CSS transitions handle the smoothing
+        let elL = document.getElementById('danger-left'); let elR = document.getElementById('danger-right'); let elB = document.getElementById('danger-behind');
         elL.style.opacity = Math.min(1, parseFloat(elL.style.opacity || 0) * 0.9 + closestL * 0.1); 
         elR.style.opacity = Math.min(1, parseFloat(elR.style.opacity || 0) * 0.9 + closestR * 0.1);
         elB.style.opacity = Math.min(1, parseFloat(elB.style.opacity || 0) * 0.9 + closestB * 0.1);

@@ -1,190 +1,71 @@
-body {
-    margin: 0;
-    overflow: hidden;
-    background-color: #000;
-    font-family: 'Courier New', Courier, monospace;
-    color: #0f0;
-    touch-action: none;
-}
+/* ... Keep body, #gameCanvas, #ui-layer ... */
+body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Courier New', Courier, monospace; color: #0f0; touch-action: none; }
+#gameCanvas { display: block; position: absolute; top: 0; left: 0; cursor: crosshair; }
+#ui-layer { position: absolute; top: 20px; left: 20px; pointer-events: none; font-size: 16px; text-shadow: 0 0 5px #0f0; z-index: 60; line-height: 1.4; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; }
 
-#gameCanvas {
-    display: block;
-    position: absolute;
-    top: 0; left: 0;
-    cursor: crosshair;
-}
-
-/* UI Layer */
-#ui-layer {
-    position: absolute;
-    top: 20px; left: 20px;
-    pointer-events: none;
-    font-size: 16px;
-    text-shadow: 0 0 5px #0f0;
-    z-index: 60; 
-    line-height: 1.4;
-    background: rgba(0,0,0,0.5);
-    padding: 10px;
-    border-radius: 8px;
-}
-
-/* START SCREEN */
-#start-screen {
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.9);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    z-index: 100;
-    color: #0f0;
-}
+/* ... Keep #start-screen, .menu-btn ... */
+#start-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; color: #0f0; }
 #start-screen h1 { font-size: 40px; margin-bottom: 10px; text-shadow: 0 0 20px #0f0; }
 #start-screen p { font-size: 18px; color: #888; margin-bottom: 30px; }
-.menu-btn {
-    padding: 15px 40px;
-    font-size: 20px;
-    font-weight: bold;
-    background: #003300;
-    color: #0f0;
-    border: 2px solid #0f0;
-    cursor: pointer;
-    margin: 10px;
-    width: 250px;
-    text-align: center;
-}
+.menu-btn { padding: 15px 40px; font-size: 20px; font-weight: bold; background: #003300; color: #0f0; border: 2px solid #0f0; cursor: pointer; margin: 10px; width: 250px; text-align: center; }
 .menu-btn:hover { background: #0f0; color: #000; }
 .menu-btn.disabled { border-color: #555; color: #555; cursor: not-allowed; background: #111; }
 
-/* STORY OVERLAY */
-#story-overlay {
-    display: none;
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: #000;
-    z-index: 90;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-}
-.haiku-line {
-    font-size: 24px; color: #0f0; margin: 10px; opacity: 0;
-    text-shadow: 0 0 10px #0f0; transition: opacity 0.5s;
-}
-#story-continue-btn {
-    display: none; margin-top: 40px; padding: 15px 30px;
-    font-size: 20px; background: #0f0; color: #000;
-    border: none; cursor: pointer; font-weight: bold;
-}
+/* ... Keep #story-overlay ... */
+#story-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 90; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+.haiku-line { font-size: 24px; color: #0f0; margin: 10px; opacity: 0; text-shadow: 0 0 10px #0f0; transition: opacity 0.5s; }
+#story-continue-btn { display: none; margin-top: 40px; padding: 15px 30px; font-size: 20px; background: #0f0; color: #000; border: none; cursor: pointer; font-weight: bold; }
 
-/* TABBED SHOP MENU */
-#shop-overlay {
-    display: none;
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0, 10, 0, 0.95);
-    z-index: 50;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    color: #0f0;
-}
-
-/* Tabs Header */
+/* ... Keep #shop-overlay and tabs ... */
+#shop-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 10, 0, 0.95); z-index: 50; flex-direction: column; align-items: center; justify-content: center; color: #0f0; }
 .shop-tabs { display: flex; gap: 10px; margin-bottom: 20px; }
-.tab-btn {
-    padding: 10px 20px; background: #002200; border: 1px solid #0f0;
-    color: #888; cursor: pointer; font-size: 18px; font-weight: bold;
-}
+.tab-btn { padding: 10px 20px; background: #002200; border: 1px solid #0f0; color: #888; cursor: pointer; font-size: 18px; font-weight: bold; }
 .tab-btn.active { background: #0f0; color: #000; border-color: #0f0; }
-
-/* Tab Content */
-.tab-content {
-    display: none; width: 80%; max-width: 500px;
-    background: #001100; border: 1px solid #0f0;
-    padding: 20px; min-height: 200px;
-    flex-direction: column; align-items: center; /* Center items */
-}
+.tab-content { display: none; width: 80%; max-width: 500px; background: #001100; border: 1px solid #0f0; padding: 20px; min-height: 200px; flex-direction: column; align-items: center; }
 .tab-content.active { display: flex; }
-
-.shop-item {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 15px; border-bottom: 1px solid #004400;
-    padding-bottom: 10px; width: 100%;
-}
+.shop-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #004400; padding-bottom: 10px; width: 100%; }
 .shop-item:last-child { border-bottom: none; }
-
-button {
-    background: #003300; color: #0f0; border: 1px solid #0f0;
-    padding: 5px 10px; cursor: pointer; font-family: inherit;
-}
+button { background: #003300; color: #0f0; border: 1px solid #0f0; padding: 5px 10px; cursor: pointer; font-family: inherit; }
 button:active { background: #0f0; color: #000; }
 button:disabled { border-color: #555; color: #555; background: #111; cursor: not-allowed; }
+#next-wave-btn { margin-top: 20px; padding: 15px 30px; font-size: 20px; font-weight: bold; background: #0f0; color: #000; }
 
-#next-wave-btn {
-    margin-top: 20px; padding: 15px 30px;
-    font-size: 20px; font-weight: bold;
-    background: #0f0; color: #000;
-}
-
-/* ACCORDION MENU STYLES */
-.accordion-header {
-    width: 100%;
-    padding: 10px;
-    background: #003300;
-    border: 1px solid #0f0;
-    color: #0f0;
-    font-weight: bold;
-    cursor: pointer;
-    text-align: left;
-    margin-bottom: 5px;
-}
+/* ... Keep accordion ... */
+.accordion-header { width: 100%; padding: 10px; background: #003300; border: 1px solid #0f0; color: #0f0; font-weight: bold; cursor: pointer; text-align: left; margin-bottom: 5px; }
 .accordion-header:hover { background: #0f0; color: #000; }
-.accordion-content {
-    display: none; /* Hidden by default */
-    width: 100%;
-    background: #001100;
-    border: 1px solid #004400;
-    border-top: none;
-    padding: 10px;
-    margin-bottom: 15px;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-.accordion-content.show { display: flex; } /* Show when toggled */
-
+.accordion-content { display: none; width: 100%; background: #001100; border: 1px solid #004400; border-top: none; padding: 10px; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
+.accordion-content.show { display: flex; }
 .turret-grid { display: flex; gap: 10px; width: 100%; justify-content: space-around; }
 .turret-btn { width: 50px; height: 50px; background: #002200; border: 1px solid #0f0; color: #0f0; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; }
 .turret-btn:hover { background: #004400; }
 .turret-btn.owned { background: #0f0; color: #000; border-color: #0f0; }
 
-/* WEAPON RACK */
-#weapon-rack {
-    position: absolute; bottom: 20px; right: 20px;
-    display: flex; flex-direction: column-reverse; 
-    align-items: flex-end; gap: 10px; z-index: 70;
-}
-#weapon-toggle {
+/* WEAPON RACK & COOLDOWN */
+#weapon-rack { position: absolute; bottom: 20px; right: 20px; display: flex; flex-direction: column-reverse; align-items: flex-end; gap: 10px; z-index: 70; }
+
+#weapon-toggle { 
     width: 60px; height: 60px; background: rgba(0, 40, 0, 0.9);
     border: 3px solid #0f0; color: #0f0;
     display: flex; justify-content: center; align-items: center;
     border-radius: 50%; font-size: 24px; cursor: pointer;
     box-shadow: 0 0 15px #0f0;
+    position: relative; /* Needed for absolute overlay */
+    overflow: hidden; /* Clips the cooldown overlay */
 }
-#weapon-list {
-    display: none; flex-direction: column-reverse;
-    gap: 10px; margin-bottom: 10px;
+
+/* NEW: Cooldown Overlay */
+#weapon-cooldown {
+    position: absolute;
+    bottom: 0; left: 0;
+    width: 100%; height: 0%; /* Starts empty */
+    background: rgba(0, 255, 0, 0.5); /* Semi-transparent green */
+    pointer-events: none;
+    transition: height 0.1s linear;
 }
+
+#weapon-list { display: none; flex-direction: column-reverse; gap: 10px; margin-bottom: 10px; }
 #weapon-list.open { display: flex; }
-.weapon-slot {
-    width: 120px; height: 40px; background: rgba(0, 20, 0, 0.9);
-    border: 1px solid #0f0; color: #0f0;
-    display: flex; justify-content: center; align-items: center;
-    cursor: pointer; font-size: 14px; font-weight: bold;
-    user-select: none; border-radius: 5px;
-}
+.weapon-slot { width: 120px; height: 40px; background: rgba(0, 20, 0, 0.9); border: 1px solid #0f0; color: #0f0; display: flex; justify-content: center; align-items: center; cursor: pointer; font-size: 14px; font-weight: bold; user-select: none; border-radius: 5px; }
 .weapon-slot.active { background: #0f0; color: #000; }
 .weapon-slot.locked { border-color: #555; color: #555; background: #111; }
 
@@ -194,24 +75,24 @@ button:disabled { border-color: #555; color: #555; background: #111; cursor: not
 #danger-right { top: 20%; bottom: 20%; right: 0; width: 15px; }
 #danger-behind { bottom: 0; left: 20%; right: 20%; height: 15px; }
 
-/* NAV ZONES - BOXES */
+/* NAV ZONES - BOXES WITH HIGHLIGHT */
 .nav-zone {
     position: absolute; display: flex; justify-content: center; align-items: center;
     font-size: 24px; font-weight: bold; color: #0f0;
     cursor: pointer; z-index: 30; user-select: none; 
-    background: rgba(0, 20, 0, 0.8); /* Dark Green Box */
+    background: rgba(0, 20, 0, 0.8);
     border: 2px solid #0f0;
     box-shadow: 0 0 10px #000;
+    transition: background 0.1s, transform 0.1s;
 }
-.nav-zone:active { background: #0f0; color: #000; }
+.nav-zone:active { background: #0f0; color: #000; transform: translateY(-50%) scale(0.95); } /* Press effect */
+.nav-zone:hover { background: rgba(0, 60, 0, 0.9); box-shadow: 0 0 20px #0f0; } /* Highlight effect */
 
-/* Smaller Hitboxes, Specific Positions */
+/* Positions */
 #nav-left { top: 50%; left: 10px; width: 50px; height: 50px; transform: translateY(-50%); }
 #nav-right { top: 50%; right: 10px; width: 50px; height: 50px; transform: translateY(-50%); }
 #nav-down { bottom: 10px; left: 50%; width: 50px; height: 50px; transform: translateX(-50%); }
+/* Special active state for bottom button (since it uses translateX) */
+#nav-down:active { transform: translateX(-50%) scale(0.95); }
 
-#restart-btn {
-    display: none; position: absolute; top: 60%; left: 50%;
-    transform: translate(-50%, -50%); background: #f00; color: #fff; border: 2px solid #fff;
-    padding: 15px 30px; font-size: 24px; z-index: 100;
-}
+#restart-btn { display: none; position: absolute; top: 60%; left: 50%; transform: translate(-50%, -50%); background: #f00; color: #fff; border: 2px solid #fff; padding: 15px 30px; font-size: 24px; z-index: 100; }

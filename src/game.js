@@ -58,6 +58,103 @@ window.switchTab = (tabName) => { AudioMgr.playSelect(); document.querySelectorA
 window.toggleAccordion = (id) => { AudioMgr.playSelect(); const el = document.getElementById(id); if (el.classList.contains('show')) { el.classList.remove('show'); } else { document.querySelectorAll('.accordion-content').forEach(e => e.classList.remove('show')); el.classList.add('show'); } };
 window.buyRepair = () => { if (state.gold >= 50 && state.towerHp < 100) { AudioMgr.playSelect(); state.gold -= 50; state.towerHp = Math.min(100, state.towerHp + 20); updateGameUI(); } };
 window.toggleWeaponMenu = () => { AudioMgr.playSelect(); const list = document.getElementById('weapon-list'); list.classList.toggle('open'); if (list.classList.contains('open')) { document.querySelectorAll('.weapon-slot').forEach(el => el.classList.remove('active')); const el = document.getElementById(`slot-${state.currentWeapon}`); if(el) el.classList.add('active'); } };
+window.openProfile = () => {
+    AudioMgr.playSelect();
+    document.getElementById('profile-overlay').style.display = 'flex';
+    window.switchProfileTab('stats'); // Default to stats
+};
+
+window.closeProfile = () => {
+    AudioMgr.playSelect();
+    document.getElementById('profile-overlay').style.display = 'none';
+};
+
+window.openOptions = () => {
+    window.openProfile();
+    window.switchProfileTab('options');
+};
+
+window.switchProfileTab = (tab) => {
+    document.querySelectorAll('#profile-overlay .tab-content').forEach(e => e.classList.remove('active'));
+    document.querySelectorAll('#profile-overlay .tab-btn').forEach(e => e.classList.remove('active'));
+    document.getElementById(`p-tab-${tab}`).classList.add('active');
+    document.getElementById(`btn-p-${tab}`).classList.add('active');
+    
+    if (tab === 'stats') updateStatsTab();
+    if (tab === 'bestiary') updateBestiaryTab();
+};
+
+function updateStatsTab() {
+    document.getElementById('p-highwave').innerText = player.highWave;
+    document.getElementById('p-totalkills').innerText = player.totalKills || 0;
+    // Simple Rank Logic
+    let rank = "Rookie";
+    let k = player.totalKills || 0;
+    if (k > 50) rank = "Survivor";
+    if (k > 200) rank = "Veteran";
+    if (k > 1000) rank = "Sniper Elite";
+    document.getElementById('p-rank').innerText = rank;
+}
+
+function updateBestiaryTab() {
+    const grid = document.getElementById('bestiary-grid');
+    grid.innerHTML = ""; // Clear
+    
+    // Loop through our data definitions
+    for (let type in BESTIARY_DATA) {
+        let kills = player.bestiary[type] || 0;
+        let info = BESTIARY_DATA[type];
+        
+        let div = document.createElement('div');
+        div.className = "beast-icon";
+        
+        // UNLOCK LOGIC
+        // 0 Kills = Locked (?)
+        // 1+ Kill = Icon Visible
+        // 10+ Kills = Info Unlocked
+        
+        if (kills > 0) {
+            div.innerText = info.icon;
+            div.classList.add('unlocked');
+            div.onclick = () => showEnemyDetails(type, kills);
+        } else {
+            div.innerText = "?";
+            div.style.color = "#555";
+            div.onclick = () => {
+                document.getElementById('b-name').innerText = "???";
+                document.getElementById('b-desc').innerText = "Encouter this enemy to reveal its form.";
+                document.getElementById('b-stats').innerText = "";
+            };
+        }
+        grid.appendChild(div);
+    }
+}
+
+function showEnemyDetails(type, kills) {
+    const info = BESTIARY_DATA[type];
+    document.getElementById('b-name').innerText = info.name;
+    
+    if (kills >= 10) {
+        document.getElementById('b-desc').innerText = info.desc;
+        document.getElementById('b-stats').innerHTML = `
+            <div style="margin-top:10px; color:#aaa; font-size:12px;">
+                HP: <span style="color:#fff">${info.hp}</span> | 
+                SPEED: <span style="color:#fff">${info.speed}</span> | 
+                KILLS: <span style="color:#0f0">${kills}</span>
+            </div>
+        `;
+    } else {
+        document.getElementById('b-desc').innerText = `Analysis in progress... (${kills}/10 kills)`;
+        document.getElementById('b-stats').innerText = "Defeat more to unlock tactical data.";
+    }
+}
+
+window.resetData = () => {
+    if(confirm("WIPE ALL DATA? This cannot be undone.")) {
+        localStorage.clear();
+        location.reload();
+    }
+};
 window.selectWeapon = (id) => {
     if (player.unlockedWeapons.includes(id)) {
         AudioMgr.playSelect();
@@ -163,9 +260,12 @@ function checkHit(x, y, dmg, isPlayer, radiusMult = 1.0) {
             if (e.hp <= 0) {
                 spawnExplosion(e.x, drawY, e.color);
                 state.enemies.splice(i, 1);
+                player.totalKills = (player.totalKills || 0) + 1;
                 player.xp += e.xpValue;
                 state.gold += 10;
                 spawnFloatingText(`+${e.xpValue}XP`, e.x, drawY - 20, "#0ff");
+                let type = e.type || 'basic'; 
+    player.bestiary[type] = (player.bestiary[type] || 0) + 1;
                 saveGame();
             }
             hitCount++;

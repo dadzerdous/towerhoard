@@ -54,8 +54,21 @@ window.buyWeapon = (id) => { let cost = (id === 'shotgun') ? 200 : 500; if (play
 window.buyUpgrade = (type) => { if (type === 'damage' && player.xp >= COST_DAMAGE) { AudioMgr.playSelect(); player.xp -= COST_DAMAGE; player.stats.damage++; const btn = document.getElementById('btn-damage'); if(btn) btn.innerText = `${COST_DAMAGE} XP`; saveGame(); } };
 window.buyTurret = (dir) => { if (!state.turrets[dir] && state.gold >= COST_TURRET) { AudioMgr.playSelect(); state.gold -= COST_TURRET; state.turrets[dir] = true; updateNavLabels(); updateShopButtons(); } };
 window.nextWave = () => { AudioMgr.playSelect(); document.getElementById('shop-overlay').style.display = 'none'; state.shopOpen = false; startNextWave(); };
-function startNextWave() { state.wave++; state.enemiesSpawned = 0; state.enemiesToSpawn = 10 + (state.wave * 2); state.enemies = []; showHaiku(state.wave - 1); saveGame(); }
-function turn(dirChange) { state.dirIndex = (state.dirIndex + dirChange + 4) % 4; updateNavLabels(); if (state.shopOpen) updateShopButtons(); }
+
+function startNextWave() {
+    state.wave++;
+    state.enemiesSpawned = 0;
+    state.enemiesToSpawn = 10 + (state.wave * 2); 
+    state.enemies = [];
+    showHaiku(state.wave - 1);
+    saveGame();
+}
+
+function turn(dirChange) {
+    state.dirIndex = (state.dirIndex + dirChange + 4) % 4;
+    updateNavLabels();
+    if (state.shopOpen) updateShopButtons();
+}
 
 function shoot() {
     if (!state.gameStarted || state.storyOpen || state.gameOver || !state.waveActive || state.shopOpen) return;
@@ -102,19 +115,17 @@ function checkHit(x, y, dmg, isPlayer, radiusMult = 1.0) {
     }
 }
 
-// UPDATED: DETECTOR LOGIC (Scope Radius Check)
+// DETECTOR LOGIC (Scope Radius Check)
 function checkTargetLock(aimX, aimY, scopeRadius) {
     state.targetLocked = false;
     for (let i = 0; i < state.enemies.length; i++) {
         let e = state.enemies[i];
-        // Only check current view
         if (e.view !== state.directions[state.dirIndex]) continue;
         
         let drawY = e.y + ((100 - e.distance) * (canvas.height/300));
         let dist = Math.hypot(e.x - aimX, drawY - aimY);
         
-        // If distance is less than Scope Radius, we have them in the tube
-        // Detection range slightly smaller than radius to avoid flickering on edge
+        // Use real scope radius logic (approx 90% tolerance)
         if (dist < scopeRadius * 0.9) { 
             state.targetLocked = true; 
             return; 
@@ -153,7 +164,7 @@ function triggerDamageFeedback(enemyDir) { renderer.triggerDamageFlash(); let di
 
 // --- MAIN LOOP ---
 let lastTime = 0;
-let spawnTimer = 0;
+let spawnTimer = 1500; // FIX: Start almost ready (1.5s delay max)
 let spawnRate = 2000;
 
 function gameLoop(timestamp) {
@@ -213,29 +224,31 @@ function gameLoop(timestamp) {
 
     // RENDER ORDER (Sandwich Method)
     
-    // 1. Draw Darkness
+    // 1. Draw Darkness (BG Overlay)
     const aim = input.getAim();
     const weaponScale = WEAPONS[state.currentWeapon].scopeScale || 1.0;
-    const scopeRadius = player.stats.scopeSize * weaponScale; // Calculated here to pass to both
+    const scopeRadius = player.stats.scopeSize * weaponScale; 
     
     if (state.recoilY > 0) state.recoilY *= 0.8; 
     renderer.drawDarkness(aim.x, aim.y, scopeRadius, state.recoilY);
 
-    // 2. Draw Enemies (Visible ones)
+    // 2. Draw Enemies (Under Darkness?) No, wait. 
+    // If we draw Darkness AFTER Enemies, they are hidden outside the hole. CORRECT.
+    // So:
+    // A. Draw World (Clear) - Done at top
+    // B. Draw Enemies
     for (let i = state.enemies.length - 1; i >= 0; i--) {
         let e = state.enemies[i];
         if (e.view === state.directions[state.dirIndex]) { e.draw(ctx, renderer.width, renderer.height); }
     }
+    // C. Draw Darkness (Hides enemies outside scope)
+    renderer.drawDarkness(aim.x, aim.y, scopeRadius, state.recoilY);
 
-    // 3. Draw Yellow Guides (Clipped)
+    // 3. Draw Yellow Guides (On top of Darkness)
     renderer.drawEnemyGuides(state.enemies, state.dirIndex, state.directions, aim, scopeRadius);
 
     // 4. Draw Scope UI (Rims)
-    checkTargetLock(aim.x, aim.y, renderer.height * 0.17 * scopeRadius); // Pass radius pixel size approx
-    // Actual Radius calculation for checkTargetLock needs to match renderer
-    let realRadius = (renderer.height * 0.17) * scopeRadius; 
-    checkTargetLock(aim.x, aim.y, realRadius);
-
+    checkTargetLock(aim.x, aim.y, renderer.height * 0.17 * scopeRadius); 
     renderer.drawScopeUI(aim.x, aim.y, scopeRadius, state.recoilY, state.targetLocked);
 
     renderer.drawParticles(state.particles);

@@ -41,29 +41,15 @@ document.getElementById('nav-down').addEventListener('click', () => turn(2));
 canvas.addEventListener('mousedown', shoot);
 canvas.addEventListener('touchend', shoot);
 
-// HELPER: CENTRAL UI UPDATE
-function updateGameUI() {
-    renderer.updateUI(player, state, state.enemiesToSpawn);
-}
+function updateGameUI() { renderer.updateUI(player, state, state.enemiesToSpawn); }
 
-// --- UI FUNCTIONS ---
 window.startStoryMode = () => { AudioMgr.playSelect(); document.getElementById('start-screen').style.display = 'none'; state.gameStarted = true; showHaiku(0); };
 window.dismissStory = () => { AudioMgr.playSelect(); document.getElementById('story-overlay').style.display = 'none'; state.storyOpen = false; state.waveActive = true; };
 window.skipStoryTypewriter = () => { document.querySelectorAll('.haiku-line').forEach(el => el.style.opacity = 1); document.getElementById('story-continue-btn').style.display = 'block'; };
 function showHaiku(waveIndex) { state.storyOpen = true; state.waveActive = false; const overlay = document.getElementById('story-overlay'); const lines = HAIKUS[Math.min(waveIndex, HAIKUS.length - 1)]; document.getElementById('line1').innerText = lines[0]; document.getElementById('line2').innerText = lines[1]; document.getElementById('line3').innerText = lines[2]; document.getElementById('story-continue-btn').style.display = 'none'; document.querySelectorAll('.haiku-line').forEach((el, i) => { el.style.opacity = 0; setTimeout(() => el.style.opacity = 1, 500 + (i * 1000)); }); setTimeout(() => { if(state.storyOpen) document.getElementById('story-continue-btn').style.display = 'block'; }, 3500); overlay.style.display = 'flex'; }
 window.switchTab = (tabName) => { AudioMgr.playSelect(); document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active')); document.getElementById(`tab-${tabName}`).classList.add('active'); document.getElementById(`btn-tab-${tabName}`).classList.add('active'); };
 window.toggleAccordion = (id) => { AudioMgr.playSelect(); const el = document.getElementById(id); if (el.classList.contains('show')) { el.classList.remove('show'); } else { document.querySelectorAll('.accordion-content').forEach(e => e.classList.remove('show')); el.classList.add('show'); } };
-
-// REPAIR FIX
-window.buyRepair = () => { 
-    if (state.gold >= 50 && state.towerHp < 100) { 
-        AudioMgr.playSelect(); 
-        state.gold -= 50; 
-        state.towerHp = Math.min(100, state.towerHp + 20); 
-        updateGameUI(); // Use the local helper!
-    } 
-};
-
+window.buyRepair = () => { if (state.gold >= 50 && state.towerHp < 100) { AudioMgr.playSelect(); state.gold -= 50; state.towerHp = Math.min(100, state.towerHp + 20); updateGameUI(); } };
 window.toggleWeaponMenu = () => { AudioMgr.playSelect(); const list = document.getElementById('weapon-list'); list.classList.toggle('open'); if (list.classList.contains('open')) { document.querySelectorAll('.weapon-slot').forEach(el => el.classList.remove('active')); const el = document.getElementById(`slot-${state.currentWeapon}`); if(el) el.classList.add('active'); } };
 window.selectWeapon = (id) => { if (player.unlockedWeapons.includes(id)) { AudioMgr.playSelect(); state.currentWeapon = id; document.getElementById('weapon-list').classList.remove('open'); let icon = "🔫"; if(id === 'shotgun') icon = "💥"; if(id === 'sniper') icon = "🔭"; document.getElementById('weapon-toggle').innerText = icon; } };
 window.buyWeapon = (id) => { let cost = (id === 'shotgun') ? 200 : 500; if (player.xp >= cost && !player.unlockedWeapons.includes(id)) { AudioMgr.playSelect(); player.xp -= cost; player.unlockedWeapons.push(id); saveGame(); updateWeaponUI(); } };
@@ -123,15 +109,10 @@ function checkTargetLock(aimX, aimY, scopeRadius) {
     for (let i = 0; i < state.enemies.length; i++) {
         let e = state.enemies[i];
         if (e.view !== state.directions[state.dirIndex]) continue;
-        
         let drawY = e.y + ((100 - e.distance) * (canvas.height/300));
         let dist = Math.hypot(e.x - aimX, drawY - aimY);
-        
-        // Use real scope radius logic (approx 90% tolerance)
-        if (dist < scopeRadius * 0.9) { 
-            state.targetLocked = true; 
-            return; 
-        }
+        // Uses scope radius with tolerance
+        if (dist < scopeRadius * 0.95) { state.targetLocked = true; return; }
     }
 }
 
@@ -175,7 +156,7 @@ function gameLoop(timestamp) {
 
     renderer.clear();
     
-    // Draw Castle
+    // Draw Castle (Background)
     const currentDir = state.directions[state.dirIndex];
     if (currentDir === state.castleDir) { renderer.drawCastle(state.castleProgress, true); }
 
@@ -224,34 +205,32 @@ function gameLoop(timestamp) {
 
     if (state.gameOver) { renderer.drawGameOver(state.towerHp <= 0); return; }
 
-    // RENDER ORDER (Sandwich Method)
-    const aim = input.getAim();
-    const weaponScale = WEAPONS[state.currentWeapon].scopeScale || 1.0;
-    const scopeRadius = player.stats.scopeSize * weaponScale; 
-    
-    if (state.recoilY > 0) state.recoilY *= 0.8; 
-    
-    // 1. Darkness
-    renderer.drawDarkness(aim.x, aim.y, scopeRadius, state.recoilY);
-
-    // 2. Enemies
+    // RENDER ORDER FIX: 
+    // 1. Draw Enemies (Behind Darkness)
     for (let i = state.enemies.length - 1; i >= 0; i--) {
         let e = state.enemies[i];
         if (e.view === state.directions[state.dirIndex]) { e.draw(ctx, renderer.width, renderer.height); }
     }
 
-    // 3. Yellow Guides (Clipped)
+    const aim = input.getAim();
+    const weaponScale = WEAPONS[state.currentWeapon].scopeScale || 1.0;
+    const scopeRadius = player.stats.scopeSize * weaponScale; 
+    
+    if (state.recoilY > 0) state.recoilY *= 0.8; 
+
+    // 2. Draw Darkness (Hides enemies)
+    renderer.drawDarkness(aim.x, aim.y, scopeRadius, state.recoilY);
+
+    // 3. Draw Yellow Guides (On top of Darkness)
     renderer.drawEnemyGuides(state.enemies, state.dirIndex, state.directions, aim, scopeRadius);
 
-    // 4. Scope UI
+    // 4. Draw Scope UI (Rims)
     checkTargetLock(aim.x, aim.y, renderer.height * 0.17 * scopeRadius); 
     renderer.drawScopeUI(aim.x, aim.y, scopeRadius, state.recoilY, state.targetLocked);
 
     renderer.drawParticles(state.particles);
     renderer.updateIndicators(state.enemies, state.dirIndex, state.directions);
-    
-    // USE LOCAL HELPER TO UPDATE UI
-    updateGameUI();
+    updateGameUI(); // Updates HTML text
 
     requestAnimationFrame(gameLoop);
 }

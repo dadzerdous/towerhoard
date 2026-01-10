@@ -94,35 +94,29 @@ export class Renderer {
     }
 
     drawDarkness(x, y, radius, recoil, lightLevel = 0) {
-    this.ctx.save();
-    
-    // 1. Fill the screen with solid black
-    this.ctx.fillStyle = 'black';
-    this.ctx.fillRect(0, 0, this.width, this.height);
+    // 1. Calculate Flashlight Radius (If you have the upgrade)
+    // If no light, the "outer" darkness starts right at the scope edge.
+    // If light > 0, the "outer" darkness is pushed back.
+    let outerRadius = radius + (lightLevel * 60);
 
-    // 2. Set blend mode to "Cut Out"
-    this.ctx.globalCompositeOperation = 'destination-out';
-
-    // 3. Cut out the main Scope (Crystal clear vision)
+    // --- LAYER 1: SOLID PITCH BLACKNESS ---
+    // Draws a black screen with a hole size of 'outerRadius'
+    this.ctx.fillStyle = "black";
     this.ctx.beginPath();
-    this.ctx.arc(x, y - recoil, radius, 0, Math.PI * 2);
-    this.ctx.fillStyle = 'rgba(0, 0, 0, 1.0)'; // 1.0 alpha = removes all black
+    this.ctx.rect(0, 0, this.width, this.height); // Clockwise Rect
+    this.ctx.arc(x, y - recoil, outerRadius, 0, Math.PI * 2, true); // Counter-Clockwise Arc (Hole)
     this.ctx.fill();
 
-    // 4. Cut out the "Flashlight" Hue (If unlocked)
+    // --- LAYER 2: FLASHLIGHT DIMNESS (The Gray Ring) ---
+    // Only draws if we have a flashlight upgrade (lightLevel > 0)
+    // Draws a semi-transparent ring between the Scope and the Pitch Blackness
     if (lightLevel > 0) {
-        // The light ring gets bigger with each level
-        let lightRadius = radius + (50 * lightLevel);
-        
+        this.ctx.fillStyle = "rgba(0, 0, 0, 0.6)"; // 60% Darkness (Dim)
         this.ctx.beginPath();
-        this.ctx.arc(x, y - recoil, lightRadius, 0, Math.PI * 2);
-        
-        // 0.2 alpha = removes a little black, creating a dark see-through tint
-        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.2)'; 
+        this.ctx.arc(x, y - recoil, outerRadius, 0, Math.PI * 2, false); // Outer Circle
+        this.ctx.arc(x, y - recoil, radius, 0, Math.PI * 2, true); // Inner Hole (Scope)
         this.ctx.fill();
     }
-
-    this.ctx.restore();
 }
 
     drawEnemyGuides(enemies, currentDirIndex, directions, aim, scopeSize) {

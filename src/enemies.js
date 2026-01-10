@@ -13,6 +13,11 @@ const ENEMY_TYPES = [
         isGhost: true 
     },
     { 
+        id: 'medic', symbol: '🧙‍♂️', hp: 3, speed: 0.06, 
+        size: 1.1, flyHeight: 0, minWave: 2, xp: 20, color: '#fff',
+        isMedic: true // NEW PROPERTY
+    },
+    { 
         id: 'ogre', symbol: '👹', hp: 5, speed: 0.05, 
         size: 1.5, flyHeight: 0, minWave: 4, xp: 25, color: '#f00'
     },
@@ -40,6 +45,7 @@ export class Enemy {
         this.xpValue = type.xp;
         this.color = type.color || '#fff';
         this.isGhost = type.isGhost || false;
+        this.isMedic = type.isMedic || false;
 
         this.possibleViews = ['N', 'E', 'S', 'W'];
         this.viewIndex = Math.floor(Math.random() * 4);
@@ -50,6 +56,7 @@ export class Enemy {
         this.distance = 100; 
         this.speed = this.baseSpeed + (wave * 0.015);
         this.animTimer = Math.random() * 100; 
+        this.healTimer = 0; // For medics
     }
 
     update() {
@@ -66,12 +73,8 @@ export class Enemy {
         
         ctx.save();
         
-        // NO SHADOWS - Performance Fix
-        
-        // Ghost Fading
         if (this.isGhost) ctx.globalAlpha = 0.4 + (Math.sin(this.animTimer) * 0.3);
 
-        // Glow (Pop)
         ctx.shadowColor = this.color;
         ctx.shadowBlur = 20 * (scale / 5); 
 
@@ -82,7 +85,6 @@ export class Enemy {
 
         ctx.restore(); 
 
-        // HP Bar
         if (this.hp < this.maxHp) {
             ctx.fillStyle = "red";
             let barWidth = 20 * scale * this.sizeMult;

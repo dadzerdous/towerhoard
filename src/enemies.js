@@ -35,7 +35,7 @@ export class Enemy {
     constructor(width, height, wave) {
         const allowedTypes = ENEMY_TYPES.filter(t => wave >= t.minWave);
         const type = allowedTypes[Math.floor(Math.random() * allowedTypes.length)];
-
+this.id = type.id;
         this.symbol = type.symbol;
         this.maxHp = type.hp + Math.floor(wave / 5); 
         this.hp = this.maxHp;

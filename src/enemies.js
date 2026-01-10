@@ -61,11 +61,25 @@ export class Enemy {
     draw(ctx, width, height) {
         let scale = (100 - this.distance) / 10; 
         if (scale < 0) scale = 0;
-        
+
+          
         let drawY = (this.y - (this.flyHeight * scale * 0.1)) + ((100 - this.distance) * (height/300)); 
         let fontSize = 25 * scale * this.sizeMult;
         
         ctx.save(); // Save context state
+
+        if (this.flyHeight === 0) { // Only ground units cast floor shadows easily like this
+            ctx.save();
+            ctx.translate(this.x + (10 * scale), drawY + (fontSize/2)); // Offset slightly right/down
+            ctx.scale(1, 0.3); // Flatten Y
+            ctx.transform(1, 0, -0.5, 1, 0, 0); // Skew X
+            ctx.font = `${fontSize}px Arial`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillStyle = "rgba(0, 0, 0, 0.5)"; // Semi-transparent black
+            ctx.fillText(this.symbol, 0, 0);
+            ctx.restore();
+        }
         
         // --- GHOST FADING ---
         if (this.isGhost) {

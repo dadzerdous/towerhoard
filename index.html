@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sniper Defense .6</title>
+    <title>Sniper Defense</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -11,7 +11,15 @@
     <div id="start-screen">
         <h1>SNIPER DEFENSE</h1>
         <p>Defend the Tower. Survive the Night.</p>
-        <button id="start-btn" onclick="window.startGame()">DEPLOY</button>
+        <button class="menu-btn" onclick="window.startStoryMode()">STORY MODE</button>
+        <button class="menu-btn disabled">MULTIPLAYER (Soon)</button>
+    </div>
+
+    <div id="story-overlay" onclick="window.dismissStory()">
+        <div id="line1" class="haiku-line"></div>
+        <div id="line2" class="haiku-line"></div>
+        <div id="line3" class="haiku-line"></div>
+        <div style="margin-top:50px; font-size:14px; color:#555; animation: fadeIn 4s forwards;">(Tap to Continue)</div>
     </div>
 
     <div id="ui-layer">
@@ -24,9 +32,7 @@
     </div>
 
     <div id="weapon-rack">
-        <div id="weapon-toggle" onclick="window.toggleWeaponMenu()">
-            🔫
-        </div>
+        <div id="weapon-toggle" onclick="window.toggleWeaponMenu()">🔫</div>
         <div id="weapon-list">
             <div class="weapon-slot active" id="slot-rifle" onclick="window.selectWeapon('rifle')">RIFLE</div>
             <div class="weapon-slot locked" id="slot-shotgun" onclick="window.selectWeapon('shotgun')">SHOTGUN</div>

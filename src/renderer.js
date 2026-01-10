@@ -93,21 +93,37 @@ export class Renderer {
         this.ctx.restore();
     }
 
-    drawDarkness(aimX, aimY, scopeSize, recoilY) {
-        const radius = (this.height * 0.17) * scopeSize;
-        const rx = aimX; const ry = aimY - recoilY; 
-        this.ctx.save();
-        this.ctx.beginPath(); this.ctx.rect(0, 0, this.width, this.height); 
-        this.ctx.arc(rx, ry, radius, 0, Math.PI*2, true); 
-        this.ctx.clip();
-        this.ctx.fillStyle = "#000"; this.ctx.fillRect(0, 0, this.width, this.height);
-        if (this.damageFlashTimer > 0) {
-            this.ctx.fillStyle = `rgba(255, 0, 0, ${this.damageFlashTimer * 0.3})`;
-            this.ctx.fillRect(0, 0, this.width, this.height);
-            this.damageFlashTimer -= 0.05; 
-        }
-        this.ctx.restore();
+    drawDarkness(x, y, radius, recoil, lightLevel = 0) {
+    this.ctx.save();
+    
+    // 1. Fill the screen with solid black
+    this.ctx.fillStyle = 'black';
+    this.ctx.fillRect(0, 0, this.width, this.height);
+
+    // 2. Set blend mode to "Cut Out"
+    this.ctx.globalCompositeOperation = 'destination-out';
+
+    // 3. Cut out the main Scope (Crystal clear vision)
+    this.ctx.beginPath();
+    this.ctx.arc(x, y - recoil, radius, 0, Math.PI * 2);
+    this.ctx.fillStyle = 'rgba(0, 0, 0, 1.0)'; // 1.0 alpha = removes all black
+    this.ctx.fill();
+
+    // 4. Cut out the "Flashlight" Hue (If unlocked)
+    if (lightLevel > 0) {
+        // The light ring gets bigger with each level
+        let lightRadius = radius + (50 * lightLevel);
+        
+        this.ctx.beginPath();
+        this.ctx.arc(x, y - recoil, lightRadius, 0, Math.PI * 2);
+        
+        // 0.2 alpha = removes a little black, creating a dark see-through tint
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.2)'; 
+        this.ctx.fill();
     }
+
+    this.ctx.restore();
+}
 
     drawEnemyGuides(enemies, currentDirIndex, directions, aim, scopeSize) {
         const scopeRadius = (this.height * 0.17) * scopeSize;

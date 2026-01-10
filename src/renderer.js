@@ -125,11 +125,16 @@ drawDarkness(x, y, radius, recoil, lightLevel = 0) {
     this.ctx.restore();
 }
 
-    drawEnemyGuides(enemies, currentDirIndex, directions, aim, scopeSize) {
-        const scopeRadius = (this.height * 0.17) * scopeSize;
+drawEnemyGuides(enemies, currentDirIndex, directions, aim, radius) {
+        // REMOVED: const scopeRadius = (this.height * 0.17) * scopeSize;
+        // The 'radius' passed in is already the correct size in pixels.
+        
         this.ctx.save();
-        this.ctx.beginPath(); this.ctx.rect(0, 0, this.width, this.height); 
-        this.ctx.arc(aim.x, aim.y, scopeRadius, 0, Math.PI*2, true); 
+        this.ctx.beginPath(); 
+        
+        // Create the "Hole" clipping mask (Everything BUT the circle)
+        this.ctx.rect(0, 0, this.width, this.height); 
+        this.ctx.arc(aim.x, aim.y, radius, 0, Math.PI*2, true); 
         this.ctx.clip(); 
 
         this.ctx.shadowBlur = 10; this.ctx.shadowColor = "#ffff00"; 
@@ -141,7 +146,7 @@ drawDarkness(x, y, radius, recoil, lightLevel = 0) {
                 let dy = drawY - aim.y;
                 let distToCenter = Math.hypot(dx, dy);
 
-                if (distToCenter < scopeRadius * 1.1) return; // Hide if in scope
+                if (distToCenter < radius * 1.1) return; // Hide if in scope
 
                 let intensity = 0;
                 if (e.distance < 100) intensity = 1 - (e.distance / 100);
@@ -151,7 +156,7 @@ drawDarkness(x, y, radius, recoil, lightLevel = 0) {
                     let nx = dx / distToCenter;
                     let ny = dy / distToCenter;
                     let lineLength = 10 + (80 * intensity); 
-                    let startOffset = scopeRadius + 5; 
+                    let startOffset = radius + 5; 
 
                     this.ctx.strokeStyle = `rgba(255, 255, 0, ${intensity})`; 
                     this.ctx.lineWidth = 2 + (2 * intensity); 
@@ -165,24 +170,41 @@ drawDarkness(x, y, radius, recoil, lightLevel = 0) {
         this.ctx.restore();
     }
 
-    drawScopeUI(aimX, aimY, scopeSize, recoilY, isLocked) {
-        const radius = (this.height * 0.17) * scopeSize;
-        const rx = aimX; const ry = aimY - recoilY; 
+drawScopeUI(aimX, aimY, radius, recoilY, isLocked) {
+        // REMOVED: const radius = (this.height * 0.17) * scopeSize;
+        // Use 'radius' directly from arguments
+        
+        const rx = aimX; 
+        const ry = aimY - recoilY; 
 
-        this.ctx.strokeStyle = "#002200"; this.ctx.lineWidth = 10;
-        this.ctx.beginPath(); this.ctx.arc(rx, ry, radius, 0, Math.PI*2); this.ctx.stroke();
+        // 1. Thick Green Ring
+        this.ctx.strokeStyle = "#002200"; 
+        this.ctx.lineWidth = 10;
+        this.ctx.beginPath(); 
+        this.ctx.arc(rx, ry, radius, 0, Math.PI*2); 
+        this.ctx.stroke();
 
+        // 2. Lock-on Highlight (Yellow Outer Glow)
         if (isLocked) {
             this.ctx.save();
-            this.ctx.shadowBlur = 15; this.ctx.shadowColor = "yellow";
-            this.ctx.strokeStyle = "rgba(255, 255, 0, 0.9)"; this.ctx.lineWidth = 6;
-            this.ctx.beginPath(); this.ctx.arc(rx, ry, radius + 8, 0, Math.PI*2); this.ctx.stroke();
+            this.ctx.shadowBlur = 15; 
+            this.ctx.shadowColor = "yellow";
+            this.ctx.strokeStyle = "rgba(255, 255, 0, 0.9)"; 
+            this.ctx.lineWidth = 6;
+            this.ctx.beginPath(); 
+            this.ctx.arc(rx, ry, radius + 8, 0, Math.PI*2); 
+            this.ctx.stroke();
             this.ctx.restore();
         }
 
-        this.ctx.strokeStyle = "#0f0"; this.ctx.lineWidth = 1;
-        this.ctx.beginPath(); this.ctx.arc(rx, ry, radius - 5, 0, Math.PI*2); this.ctx.stroke();
+        // 3. Thin Inner Ring
+        this.ctx.strokeStyle = "#0f0"; 
+        this.ctx.lineWidth = 1;
+        this.ctx.beginPath(); 
+        this.ctx.arc(rx, ry, radius - 5, 0, Math.PI*2); 
+        this.ctx.stroke();
 
+        // 4. Crosshairs
         this.ctx.strokeStyle = isLocked ? "yellow" : "rgba(255, 0, 0, 0.9)";
         this.ctx.lineWidth = 1;
         this.ctx.beginPath();

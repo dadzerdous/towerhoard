@@ -5,6 +5,17 @@ import { Storage } from './storage.js';
 import { Renderer } from './renderer.js';
 import { AudioMgr } from './audio.js';
 
+const BESTIARY_DATA = {};
+ENEMY_TYPES.forEach(type => {
+    BESTIARY_DATA[type.id] = {
+        name: type.name,
+        icon: type.symbol,
+        desc: type.desc,
+        hp: type.hp < 3 ? "Low" : (type.hp > 10 ? "High" : "Med"),
+        speed: type.speed > 0.1 ? "Fast" : "Slow"
+    };
+});
+
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const renderer = new Renderer(canvas, ctx);

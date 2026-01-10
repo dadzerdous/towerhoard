@@ -8,12 +8,18 @@
 </head>
 <body>
 
-    <div id="start-screen">
-        <h1>Floating SNIPER DEFENSE</h1>
-        <p>Defend the Tower. Find the Castle.</p>
-        <button class="menu-btn" onclick="window.startStoryMode()">START MISSION</button>
-        <button class="menu-btn disabled">MULTIPLAYER (OFFLINE)</button>
+<div id="start-screen">
+    <h1>1 SNIPER DEFENSE</h1>
+    <p>Defend the Tower. Find the Castle.</p>
+    
+    <button class="menu-btn" onclick="window.startStoryMode()">START MISSION</button>
+    <button class="menu-btn" onclick="window.openProfile()">PROFILE & BESTIARY</button>
+    <button class="menu-btn" onclick="window.openOptions()">OPTIONS</button>
+    
+    <div style="position: absolute; bottom: 20px; font-size: 12px; color: #555;">
+        &copy; 2026 <a href="https://singleframegames.com" target="_blank" style="color: #888; text-decoration: none;">SingleFrameGames</a>
     </div>
+</div>
 
     <div id="story-overlay" onclick="window.skipStoryTypewriter()">
         <div id="line1" class="haiku-line"></div>
@@ -107,6 +113,46 @@
 
         <button id="next-wave-btn" onclick="window.nextWave()">START NEXT WAVE</button>
     </div>
+
+    <div id="profile-overlay" style="display:none;" class="overlay-full">
+    <h2>OPERATOR PROFILE</h2>
+    
+    <div class="shop-tabs">
+        <div class="tab-btn active" id="btn-p-stats" onclick="window.switchProfileTab('stats')">CAREER</div>
+        <div class="tab-btn" id="btn-p-bestiary" onclick="window.switchProfileTab('bestiary')">BESTIARY</div>
+        <div class="tab-btn" id="btn-p-options" onclick="window.switchProfileTab('options')">OPTIONS</div>
+    </div>
+
+    <div id="p-tab-stats" class="tab-content active">
+        <div class="stat-row">RANK: <span id="p-rank" style="color:#0f0">Rookie</span></div>
+        <div class="stat-row">HIGHEST WAVE: <span id="p-highwave">1</span></div>
+        <div class="stat-row">TOTAL KILLS: <span id="p-totalkills">0</span></div>
+        <div class="stat-row">TOTAL XP EARNED: <span id="p-totalxp">0</span></div>
+    </div>
+
+    <div id="p-tab-bestiary" class="tab-content">
+        <div id="bestiary-grid">
+            </div>
+        <div id="bestiary-details">
+            <h3 id="b-name">Unknown Hostile</h3>
+            <p id="b-desc">Select an enemy to view analysis.</p>
+            <div id="b-stats"></div>
+        </div>
+    </div>
+
+    <div id="p-tab-options" class="tab-content">
+        <div class="shop-item">
+            <span>Master Volume</span>
+            <button onclick="window.toggleMute()">TOGGLE</button>
+        </div>
+        <div class="shop-item">
+            <span>Delete Save Data</span>
+            <button onclick="window.resetData()" style="color:red; border-color:red;">RESET</button>
+        </div>
+    </div>
+
+    <button class="menu-btn" onclick="window.closeProfile()" style="margin-top:20px;">BACK</button>
+</div>
 
     <div id="current-dir">N <span id="turret-indicator"></span></div>
     <div id="danger-left" class="danger-indicator"></div>

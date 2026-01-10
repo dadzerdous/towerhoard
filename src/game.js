@@ -1,4 +1,5 @@
-import { Enemy } from './enemies.js';
+// Change the first line to import ENEMY_TYPES too
+import { Enemy, ENEMY_TYPES } from './enemies.js';
 import { InputHandler } from './input.js';
 import { Storage } from './storage.js';
 import { Renderer } from './renderer.js';
@@ -7,16 +8,7 @@ import { AudioMgr } from './audio.js';
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const renderer = new Renderer(canvas, ctx);
-// Matches the IDs in enemies.js
-const BESTIARY_DATA = {
-    'imp':    { name: "Imp", icon: "👿", desc: "Weak but fast. They swarm early.", hp: "Low", speed: "Fast" },
-    'zombie': { name: "Walker", icon: "🧟", desc: "The standard infected. Aim for the head.", hp: "Low", speed: "Slow" },
-    'medic':  { name: "Healer", icon: "🧙‍♂️", desc: "Heals nearby units. PRIORITY TARGET.", hp: "Med", speed: "Med" },
-    'ghost':  { name: "Spectre", icon: "👻", desc: "Hard to see. Flies over defenses.", hp: "Low", speed: "Fast" },
-    'ogre':   { name: "Ogre", icon: "👹", desc: "Thick hide. Requires high caliber.", hp: "High", speed: "Slow" },
-    'golem':  { name: "Golem", icon: "🗿", desc: "Ancient stone. Extremely durable.", hp: "V. High", speed: "V. Slow" },
-    'dragon': { name: "Wyvern", icon: "🐉", desc: "Apex predator. Do not miss.", hp: "Boss", speed: "Fast" }
-};
+
 
 window.addEventListener('resize', () => { renderer.resize(window.innerWidth, window.innerHeight); });
 renderer.resize(window.innerWidth, window.innerHeight);

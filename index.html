@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>1Sniper Defensec 1</title>
+    <title>Sniper Defense</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -20,6 +20,13 @@
         &copy; 2026 <a href="https://singleframegames.com" target="_blank" style="color: #888; text-decoration: none;">SingleFrameGames</a>
     </div>
 </div>
+
+    <div id="victory-screen" style="display:none;">
+        <h1 style="color:gold; font-size:50px; text-shadow:0 0 20px gold;">MISSION ACCOMPLISHED</h1>
+        <p>The Castle is secured. The skies are clear.</p>
+        <div style="font-size: 20px; margin: 20px;">FINAL SCORE: <span id="victory-score">0</span></div>
+        <button class="menu-btn" onclick="location.reload()">RETURN TO BASE</button>
+    </div>
 
     <div id="story-overlay" onclick="window.skipStoryTypewriter()">
         <div id="line1" class="haiku-line"></div>
@@ -38,6 +45,11 @@
     </div>
 
     <div id="weapon-rack">
+        <div id="skill-container">
+            <div id="skill-btn" onclick="window.activateSkill()">💥 FLARE</div>
+            <div id="skill-cooldown"></div>
+        </div>
+
         <div id="weapon-toggle" onclick="window.toggleWeaponMenu()">
             <span id="weapon-icon">🔫</span>
             <div id="weapon-cooldown"></div>
@@ -50,7 +62,7 @@
     </div>
 
     <div id="shop-overlay">
-        <h2>WAVE COMPLETE</h2>
+        <h2 id="shop-title">WAVE COMPLETE</h2>
         
         <div class="shop-tabs">
             <div class="tab-btn active" id="btn-tab-weapons" onclick="window.switchTab('weapons')">WEAPONS</div>
@@ -69,28 +81,28 @@
             </div>
         </div>
 
-<div id="tab-stats" class="tab-content">
-    <div class="shop-item">
-        <span>Base Damage (+1)</span>
-        <button id="btn-damage" onclick="window.buyUpgrade('damage')">100 XP</button>
-    </div>
-    <div class="shop-item">
-    <span>Travel Speed (+1)</span>
-    <button id="btn-speed" onclick="window.buyUpgrade('speed')">300 XP</button>
-</div>
-    <div class="shop-item">
-        <span>Rate of Fire (+10%)</span>
-        <button id="btn-rof" onclick="window.buyUpgrade('rof')">150 XP</button>
-    </div>
-    <div class="shop-item">
-        <span>Scope Size (+10%)</span>
-        <button id="btn-scope" onclick="window.buyUpgrade('scope')">120 XP</button>
-    </div>
-    <div class="shop-item">
-        <span>Flashlight (Vision)</span>
-        <button id="btn-light" onclick="window.buyUpgrade('light')">200 XP</button>
-    </div>
-</div>
+        <div id="tab-stats" class="tab-content">
+            <div class="shop-item">
+                <span>Base Damage (+1)</span>
+                <button id="btn-damage" onclick="window.buyUpgrade('damage')">100 XP</button>
+            </div>
+            <div class="shop-item">
+            <span>Travel Speed (+1)</span>
+            <button id="btn-speed" onclick="window.buyUpgrade('speed')">300 XP</button>
+        </div>
+            <div class="shop-item">
+                <span>Rate of Fire (+10%)</span>
+                <button id="btn-rof" onclick="window.buyUpgrade('rof')">150 XP</button>
+            </div>
+            <div class="shop-item">
+                <span>Scope Size (+10%)</span>
+                <button id="btn-scope" onclick="window.buyUpgrade('scope')">120 XP</button>
+            </div>
+            <div class="shop-item">
+                <span>Flashlight (Vision)</span>
+                <button id="btn-light" onclick="window.buyUpgrade('light')">200 XP</button>
+            </div>
+        </div>
 
         <div id="tab-tower" class="tab-content">
             <div class="accordion-header" onclick="window.toggleAccordion('acc-turrets')">
@@ -133,16 +145,14 @@
         <div class="stat-row">TOTAL KILLS: <span id="p-totalkills">0</span></div>
         <div class="stat-row">TOTAL XP EARNED: <span id="p-totalxp">0</span></div>
         <div class="stat-row" style="margin-top: 20px; color: #aaa; border-bottom: none;">CURRENT LOADOUT</div>
-<div class="stat-row">DAMAGE: <span id="p-stat-dmg" style="color:#fff">1</span></div>
-<div class="stat-row">RELOAD SPEED: <span id="p-stat-reload" style="color:#fff">1.0x</span></div>
-<div class="stat-row">SCOPE ZOOM: <span id="p-stat-scope" style="color:#fff">1.0x</span></div>
-<div class="stat-row">MOVEMENT: <span id="p-stat-move" style="color:#fff">1x</span></div>
-        
+        <div class="stat-row">DAMAGE: <span id="p-stat-dmg" style="color:#fff">1</span></div>
+        <div class="stat-row">RELOAD SPEED: <span id="p-stat-reload" style="color:#fff">1.0x</span></div>
+        <div class="stat-row">SCOPE ZOOM: <span id="p-stat-scope" style="color:#fff">1.0x</span></div>
+        <div class="stat-row">MOVEMENT: <span id="p-stat-move" style="color:#fff">1x</span></div>
     </div>
 
     <div id="p-tab-bestiary" class="tab-content">
-        <div id="bestiary-grid">
-            </div>
+        <div id="bestiary-grid"></div>
         <div id="bestiary-details">
             <h3 id="b-name">Unknown Hostile</h3>
             <p id="b-desc">Select an enemy to view analysis.</p>

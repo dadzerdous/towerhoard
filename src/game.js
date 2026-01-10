@@ -52,7 +52,21 @@ window.toggleAccordion = (id) => { AudioMgr.playSelect(); const el = document.ge
 window.buyRepair = () => { if (state.gold >= 50 && state.towerHp < 100) { AudioMgr.playSelect(); state.gold -= 50; state.towerHp = Math.min(100, state.towerHp + 20); updateGameUI(); } };
 window.toggleWeaponMenu = () => { AudioMgr.playSelect(); const list = document.getElementById('weapon-list'); list.classList.toggle('open'); if (list.classList.contains('open')) { document.querySelectorAll('.weapon-slot').forEach(el => el.classList.remove('active')); const el = document.getElementById(`slot-${state.currentWeapon}`); if(el) el.classList.add('active'); } };
 window.selectWeapon = (id) => { if (player.unlockedWeapons.includes(id)) { AudioMgr.playSelect(); state.currentWeapon = id; document.getElementById('weapon-list').classList.remove('open'); let icon = "🔫"; if(id === 'shotgun') icon = "💥"; if(id === 'sniper') icon = "🔭"; document.getElementById('weapon-toggle').innerText = icon; } };
-window.buyWeapon = (id) => { let cost = (id === 'shotgun') ? 200 : 500; if (player.xp >= cost && !player.unlockedWeapons.includes(id)) { AudioMgr.playSelect(); player.xp -= cost; player.unlockedWeapons.push(id); saveGame(); updateWeaponUI(); } };
+
+// BUG FIX: Wrapped buyWeapon in try/catch to avoid freezing loop
+window.buyWeapon = (id) => { 
+    try {
+        let cost = (id === 'shotgun') ? 200 : 500; 
+        if (player.xp >= cost && !player.unlockedWeapons.includes(id)) { 
+            AudioMgr.playSelect(); 
+            player.xp -= cost; 
+            player.unlockedWeapons.push(id); 
+            saveGame(); 
+            updateWeaponUI(); 
+        }
+    } catch (e) { console.error("Buy Weapon Error:", e); }
+};
+
 window.buyUpgrade = (type) => { if (type === 'damage' && player.xp >= COST_DAMAGE) { AudioMgr.playSelect(); player.xp -= COST_DAMAGE; player.stats.damage++; const btn = document.getElementById('btn-damage'); if(btn) btn.innerText = `${COST_DAMAGE} XP`; saveGame(); } };
 window.buyTurret = (dir) => { if (!state.turrets[dir] && state.gold >= COST_TURRET) { AudioMgr.playSelect(); state.gold -= COST_TURRET; state.turrets[dir] = true; updateNavLabels(); updateShopButtons(); } };
 window.nextWave = () => { AudioMgr.playSelect(); document.getElementById('shop-overlay').style.display = 'none'; state.shopOpen = false; startNextWave(); };
@@ -111,7 +125,6 @@ function checkTargetLock(aimX, aimY, scopeRadius) {
         if (e.view !== state.directions[state.dirIndex]) continue;
         let drawY = e.y + ((100 - e.distance) * (canvas.height/300));
         let dist = Math.hypot(e.x - aimX, drawY - aimY);
-        // Uses scope radius with tolerance
         if (dist < scopeRadius * 0.95) { state.targetLocked = true; return; }
     }
 }
@@ -156,9 +169,9 @@ function gameLoop(timestamp) {
 
     renderer.clear();
     
-    // Draw Castle (Background)
+    // Draw Environment (New!)
     const currentDir = state.directions[state.dirIndex];
-    if (currentDir === state.castleDir) { renderer.drawCastle(state.castleProgress, true); }
+    renderer.drawEnvironment(currentDir, state.castleProgress, state.castleDir);
 
     const isPaused = state.shopOpen || state.storyOpen || !state.gameStarted;
     const actions = input.update();
@@ -180,6 +193,24 @@ function gameLoop(timestamp) {
             state.turretTimer += dt;
             if (state.turretTimer > 2000) { fireTurrets(); state.turretTimer = 0; }
         }
+
+        // MEDIC LOGIC: Heal nearby enemies every 1s
+        state.enemies.forEach(e => {
+            if (e.isMedic) {
+                e.healTimer += dt;
+                if (e.healTimer > 1000) {
+                    e.healTimer = 0;
+                    // Heal neighbors
+                    state.enemies.forEach(other => {
+                        if (e !== other && Math.abs(e.x - other.x) < 100 && other.view === e.view) {
+                            other.hp = Math.min(other.maxHp, other.hp + 1);
+                            // Visual Pulse
+                            spawnFloatingText("❤️", other.x, 100, "pink");
+                        }
+                    });
+                }
+            }
+        });
 
         let weapon = WEAPONS[state.currentWeapon];
         let timeSinceShot = Date.now() - state.lastShotTime;
@@ -205,7 +236,7 @@ function gameLoop(timestamp) {
 
     if (state.gameOver) { renderer.drawGameOver(state.towerHp <= 0); return; }
 
-    // RENDER ORDER FIX: 
+    // RENDER ORDER
     // 1. Draw Enemies (Behind Darkness)
     for (let i = state.enemies.length - 1; i >= 0; i--) {
         let e = state.enemies[i];
@@ -218,19 +249,19 @@ function gameLoop(timestamp) {
     
     if (state.recoilY > 0) state.recoilY *= 0.8; 
 
-    // 2. Draw Darkness (Hides enemies)
+    // 2. Draw Darkness (Hides enemies outside scope)
     renderer.drawDarkness(aim.x, aim.y, scopeRadius, state.recoilY);
 
-    // 3. Draw Yellow Guides (On top of Darkness)
+    // 3. Draw Yellow Guides
     renderer.drawEnemyGuides(state.enemies, state.dirIndex, state.directions, aim, scopeRadius);
 
-    // 4. Draw Scope UI (Rims)
+    // 4. Draw Scope UI
     checkTargetLock(aim.x, aim.y, renderer.height * 0.17 * scopeRadius); 
     renderer.drawScopeUI(aim.x, aim.y, scopeRadius, state.recoilY, state.targetLocked);
 
     renderer.drawParticles(state.particles);
     renderer.updateIndicators(state.enemies, state.dirIndex, state.directions);
-    updateGameUI(); // Updates HTML text
+    updateGameUI(); 
 
     requestAnimationFrame(gameLoop);
 }

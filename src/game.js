@@ -209,6 +209,7 @@ window.buyUpgrade = (type) => {
         // Validation: Limit scope and light so they don't break the game
         if (type === 'scope' && player.stats.scopeSize >= 2.0) return; 
         if (type === 'light' && player.stats.lightLevel >= 3) return;
+        if (type === 'speed' && player.stats.moveSpeed >= 2) return; // Cap at 2?
 
         AudioMgr.playSelect(); 
         player.xp -= costs[type]; 
@@ -217,6 +218,7 @@ window.buyUpgrade = (type) => {
         if (type === 'rof') player.stats.reloadSpeed += 0.1; // 10% faster each time
         if (type === 'scope') player.stats.scopeSize += 0.1; // 10% bigger scope
         if (type === 'light') player.stats.lightLevel++;     // 1 extra ring of light
+        if (type === 'speed') player.stats.moveSpeed++;
 
         // Update Button Text to show "MAX" if needed
         const btn = document.getElementById(`btn-${type}`);
@@ -333,7 +335,34 @@ function fireTurrets() {
 
 function spawnFloatingText(text, x, y, color) { state.particles.push({ type: 0, text, x, y, life: 1.0, color, vy: -1, vx: 0 }); }
 function spawnExplosion(x, y, color) { for(let k=0; k<15; k++) { state.particles.push({ type: 1, x, y, life: 1.0, color, vx: (Math.random() - 0.5) * 10, vy: (Math.random() - 0.5) * 10 }); }}
-function openShop() { state.shopOpen = true; document.getElementById('shop-overlay').style.display = 'flex'; const btn = document.getElementById('btn-damage'); if(btn) btn.innerText = `${COST_DAMAGE} XP`; const currentDir = state.directions[state.dirIndex]; if (currentDir === state.castleDir) { state.castleProgress++; spawnFloatingText("PROGRESS!", renderer.width/2, renderer.height/2, "yellow"); } updateShopButtons(); updateWeaponUI(); window.switchTab('weapons'); }
+function openShop() {
+  state.shopOpen = true;
+
+  document.getElementById("shop-overlay").style.display = "flex";
+
+  const btn = document.getElementById("btn-damage");
+  if (btn) {
+    btn.innerText = `${COST_DAMAGE} XP`;
+  }
+
+  const currentDir = state.directions[state.dirIndex];
+  if (currentDir === state.castleDir) {
+      let speed = player.stats.moveSpeed || 1;
+        state.castleProgress += speed;
+if (state.castleProgress > 4) state.castleProgress = 4;
+      
+    spawnFloatingText(
+      "PROGRESS!",
+      renderer.width / 2,
+      renderer.height / 2,
+      "yellow"
+    );
+  }
+
+  updateShopButtons();
+  updateWeaponUI();
+  window.switchTab("weapons");
+}
 function updateWeaponUI() { if (!player.unlockedWeapons) return; player.unlockedWeapons.forEach(id => { const el = document.getElementById(`slot-${id}`); if(el) el.classList.remove('locked'); }); if(player.unlockedWeapons.includes('shotgun')) document.getElementById('shop-shotgun').style.display = 'none'; if(player.unlockedWeapons.includes('sniper')) document.getElementById('shop-sniper').style.display = 'none'; }
 function updateShopButtons() { ['N','E','S','W'].forEach(dir => { const btn = document.getElementById(`btn-turret-${dir}`); if(btn) { if (state.turrets[dir]) { btn.innerText = "OWNED"; btn.className = "turret-btn owned"; } else { btn.innerText = dir; btn.className = "turret-btn"; } } }); }
 function updateNavLabels() { let cur = state.directions[state.dirIndex]; const getIcon = (dir) => state.turrets[dir] ? "🤖" : ""; document.getElementById('current-dir').innerHTML = cur + (state.turrets[cur] ? " <span style='font-size:20px'>🤖</span>" : ""); const leftIndex = (state.dirIndex + 3) % 4; const rightIndex = (state.dirIndex + 1) % 4; const backIndex = (state.dirIndex + 2) % 4; document.getElementById('nav-left').innerText = state.directions[leftIndex] + getIcon(state.directions[leftIndex]); document.getElementById('nav-right').innerText = state.directions[rightIndex] + getIcon(state.directions[rightIndex]); document.getElementById('nav-down').innerText = state.directions[backIndex] + getIcon(state.directions[backIndex]); }

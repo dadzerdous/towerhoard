@@ -85,8 +85,19 @@ window.buyUpgrade = (type) => { if (type === 'damage' && player.xp >= COST_DAMAG
 window.buyTurret = (dir) => { if (!state.turrets[dir] && state.gold >= COST_TURRET) { AudioMgr.playSelect(); state.gold -= COST_TURRET; state.turrets[dir] = true; updateNavLabels(); updateShopButtons(); } };
 window.nextWave = () => { AudioMgr.playSelect(); document.getElementById('shop-overlay').style.display = 'none'; state.shopOpen = false; startNextWave(); };
 function startNextWave() { state.wave++; state.enemiesSpawned = 0; state.enemiesToSpawn = 10 + (state.wave * 2); state.enemies = []; showHaiku(state.wave - 1); saveGame(); }
-function turn(dirChange) { state.dirIndex = (state.dirIndex + dirChange + 4) % 4; updateNavLabels(); if (state.shopOpen) updateShopButtons(); }
+function turn(dirChange) {
+    state.dirIndex = (state.dirIndex + dirChange + 4) % 4;
+    
+    // --- ADD THIS TRANSITION LOGIC ---
+    canvas.classList.add('turning');
+    setTimeout(() => {
+        canvas.classList.remove('turning');
+    }, 100);
+    // ---------------------------------
 
+    updateNavLabels();
+    if (state.shopOpen) updateShopButtons();
+}
 function shoot() {
     if (!state.gameStarted || state.storyOpen || state.gameOver || !state.waveActive || state.shopOpen) return;
     let now = Date.now();

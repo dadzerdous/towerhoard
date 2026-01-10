@@ -42,6 +42,7 @@ const defaultStats = {
 let savedData = Storage.load();
 let player = savedData ? savedData : JSON.parse(JSON.stringify(defaultStats));
 if (!player.unlockedWeapons) player.unlockedWeapons = ['rifle'];
+if (!player.bestiary) player.bestiary = {};
 
 let state = {
     gameStarted: false, storyOpen: false, gold: 0, towerHp: 100, playerHp: 100, wave: 1, waveActive: false, shopOpen: false, 
@@ -97,6 +98,10 @@ window.switchProfileTab = (tab) => {
 };
 
 function updateStatsTab() {
+        if (!player.stats) player.stats = {};
+    if (player.stats.reloadSpeed === undefined) player.stats.reloadSpeed = 1.0;
+    if (player.stats.scopeSize === undefined) player.stats.scopeSize = 1.0;
+    if (player.stats.moveSpeed === undefined) player.stats.moveSpeed = 1;
     document.getElementById('p-highwave').innerText = player.highWave;
     document.getElementById('p-totalkills').innerText = player.totalKills || 0;
     document.getElementById('p-stat-dmg').innerText = player.stats.damage;
@@ -114,6 +119,7 @@ function updateStatsTab() {
 }
 
 function updateBestiaryTab() {
+    if (!player.bestiary) player.bestiary = {};
     const grid = document.getElementById('bestiary-grid');
     grid.innerHTML = ""; // Clear
     
@@ -456,7 +462,10 @@ function gameLoop(timestamp) {
 
     const aim = input.getAim();
     const weaponScale = WEAPONS[state.currentWeapon].scopeScale || 1.0;
-    const scopeRadius = player.stats.scopeSize * weaponScale; 
+    const scopeRadius =
+    (renderer.height * 0.17) *
+    player.stats.scopeSize *
+    weaponScale;
     
     if (state.recoilY > 0) state.recoilY *= 0.8; 
 

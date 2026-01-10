@@ -4,6 +4,7 @@ export class Renderer {
         this.ctx = ctx;
         this.width = canvas.width;
         this.height = canvas.height;
+        this.damageFlashTimer = 0; // For red flash
     }
 
     resize(w, h) {
@@ -15,11 +16,20 @@ export class Renderer {
         this.canvas.style.height = h + 'px';
     }
 
+    triggerDamageFlash() {
+        this.damageFlashTimer = 1.0; // Reset to full brightness
+    }
+
     clear() {
+        // SKY
         this.ctx.fillStyle = "#222"; 
         this.ctx.fillRect(0, 0, this.width, this.height / 2);
+
+        // GROUND
         this.ctx.fillStyle = "#000"; 
         this.ctx.fillRect(0, this.height / 2, this.width, this.height / 2);
+        
+        // Horizon
         this.ctx.strokeStyle = '#444';
         this.ctx.lineWidth = 1;
         this.ctx.beginPath();
@@ -28,42 +38,30 @@ export class Renderer {
         this.ctx.stroke();
     }
 
-    // UPDATED: Added Yellow Line Logic
-    drawEnemyGuides(enemies, currentDirIndex, directions, aim) {
-        enemies.forEach(e => {
-            if (e.view === directions[currentDirIndex] && e.distance > 0) {
-                // Calculate position (logic copied from checkHit for consistency)
-                let scale = (100 - e.distance) / 10;
-                let drawY = e.y + ((100 - e.distance) * (this.height/300));
-                
-                // Draw a faint yellow line from center-bottom to the enemy
-                this.ctx.save();
-                this.ctx.strokeStyle = "rgba(255, 255, 0, 0.2)"; // Faint yellow
-                this.ctx.lineWidth = 2;
-                this.ctx.beginPath();
-                this.ctx.moveTo(this.width / 2, this.height);
-                this.ctx.lineTo(e.x, drawY + 20); // Point to feet
-                this.ctx.stroke();
-                this.ctx.restore();
-            }
-        });
-    }
-
     drawScope(aimX, aimY, scopeSize, recoilY, isLocked) {
         const radius = (this.height * 0.22) * scopeSize;
         const rx = aimX;
         const ry = aimY - recoilY; 
 
+        // 1. BLACK OVERLAY (The Darkness)
         this.ctx.save();
         this.ctx.beginPath();
         this.ctx.rect(0, 0, this.width, this.height); 
-        this.ctx.arc(rx, ry, radius, 0, Math.PI*2, true); 
+        this.ctx.arc(rx, ry, radius, 0, Math.PI*2, true); // Cut hole
         this.ctx.clip();
         
         this.ctx.fillStyle = "#000";
         this.ctx.fillRect(0, 0, this.width, this.height);
+
+        // 2. DAMAGE FLASH (Red tint in darkness only)
+        if (this.damageFlashTimer > 0) {
+            this.ctx.fillStyle = `rgba(255, 0, 0, ${this.damageFlashTimer * 0.3})`;
+            this.ctx.fillRect(0, 0, this.width, this.height);
+            this.damageFlashTimer -= 0.05; // Fade out
+        }
         this.ctx.restore();
 
+        // 3. SCOPE RIMS
         this.ctx.strokeStyle = "#002200"; 
         this.ctx.lineWidth = 10;
         this.ctx.beginPath();
@@ -78,6 +76,7 @@ export class Renderer {
             this.ctx.stroke();
         }
 
+        // Inner Lines
         this.ctx.strokeStyle = "#0f0"; 
         this.ctx.lineWidth = 1;
         this.ctx.beginPath();
@@ -92,7 +91,41 @@ export class Renderer {
         this.ctx.stroke();
     }
 
-    drawParticles(particles) { /* (Keep existing logic) */ 
+    // UPDATED: Yellow Lines OUTSIDE Scope
+    drawEnemyGuides(enemies, currentDirIndex, directions, aim, scopeSize) {
+        const radius = (this.height * 0.22) * scopeSize;
+
+        this.ctx.save();
+        
+        // CLIP: Create a region that is Everything MINUS the Scope Circle
+        // This ensures lines are NOT drawn inside the scope
+        this.ctx.beginPath();
+        this.ctx.rect(0, 0, this.width, this.height); // Whole screen
+        this.ctx.arc(aim.x, aim.y, radius, 0, Math.PI*2, true); // Punch hole
+        this.ctx.clip();
+
+        // GLOW EFFECT
+        this.ctx.shadowBlur = 15;
+        this.ctx.shadowColor = "yellow";
+
+        enemies.forEach(e => {
+            if (e.view === directions[currentDirIndex] && e.distance > 0) {
+                let scale = (100 - e.distance) / 10;
+                let drawY = e.y + ((100 - e.distance) * (this.height/300));
+                
+                this.ctx.strokeStyle = "rgba(255, 255, 0, 0.5)"; 
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.width / 2, this.height); // Start bottom center
+                this.ctx.lineTo(e.x, drawY + 20); // Draw to enemy feet
+                this.ctx.stroke();
+            }
+        });
+        
+        this.ctx.restore();
+    }
+
+    drawParticles(particles) {
         for (let i = particles.length - 1; i >= 0; i--) {
             let p = particles[i];
             p.life -= 0.02; p.x += p.vx; p.y += p.vy;
@@ -120,6 +153,14 @@ export class Renderer {
             else if (diff === -1) closestL = Math.max(closestL, danger);
             else if (Math.abs(diff) === 2) closestB = Math.max(closestB, danger);
         });
-        document.getElementById('danger-left').style.opacity = closestL; document.getElementById('danger-right').style.opacity = closestR; document.getElementById('danger-behind').style.opacity = closestB;
+        // We use Math.max to allow damage flashes (value > 1) to override normal detection
+        let elL = document.getElementById('danger-left');
+        let elR = document.getElementById('danger-right');
+        let elB = document.getElementById('danger-behind');
+        
+        // CSS transitions handle the smoothing
+        elL.style.opacity = Math.min(1, parseFloat(elL.style.opacity || 0) * 0.9 + closestL * 0.1); 
+        elR.style.opacity = Math.min(1, parseFloat(elR.style.opacity || 0) * 0.9 + closestR * 0.1);
+        elB.style.opacity = Math.min(1, parseFloat(elB.style.opacity || 0) * 0.9 + closestB * 0.1);
     }
 }

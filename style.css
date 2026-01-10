@@ -3,14 +3,63 @@ body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Courie
 #gameCanvas { display: block; position: absolute; top: 0; left: 0; cursor: crosshair; }
 #ui-layer { position: absolute; top: 20px; left: 20px; pointer-events: none; font-size: 16px; text-shadow: 0 0 5px #0f0; z-index: 60; line-height: 1.4; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; }
 
-/* ... Keep #start-screen, .menu-btn ... */
-#start-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; color: #0f0; }
-#start-screen h1 { font-size: 40px; margin-bottom: 10px; text-shadow: 0 0 20px #0f0; }
-#start-screen p { font-size: 18px; color: #888; margin-bottom: 30px; }
-.menu-btn { padding: 15px 40px; font-size: 20px; font-weight: bold; background: #003300; color: #0f0; border: 2px solid #0f0; cursor: pointer; margin: 10px; width: 250px; text-align: center; }
-.menu-btn:hover { background: #0f0; color: #000; }
-.menu-btn.disabled { border-color: #555; color: #555; cursor: not-allowed; background: #111; }
+/* --- START SCREEN --- */
+#start-screen {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    color: #0f0;
+    font-family: 'Courier New', monospace;
+    text-align: center;
+}
 
+#start-screen h1 {
+    font-size: 40px;
+    margin-bottom: 10px;
+    text-shadow: 0 0 10px #0f0;
+    letter-spacing: 5px;
+}
+
+#start-screen p {
+    color: #aaa;
+    margin-bottom: 40px;
+    font-size: 14px;
+}
+
+.menu-btn {
+    background: transparent;
+    border: 2px solid #0f0;
+    color: #0f0;
+    padding: 15px 40px;
+    font-size: 18px;
+    cursor: pointer;
+    margin: 10px;
+    font-family: inherit;
+    transition: all 0.2s;
+    text-transform: uppercase;
+}
+
+.menu-btn:hover {
+    background: #0f0;
+    color: #000;
+    box-shadow: 0 0 15px #0f0;
+}
+
+.menu-btn.disabled {
+    border-color: #555;
+    color: #555;
+    cursor: not-allowed;
+}
+.menu-btn.disabled:hover {
+    background: transparent;
+    box-shadow: none;
+    color: #555;
+}
 /* ... Keep #story-overlay ... */
 #story-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 90; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
 .haiku-line { font-size: 24px; color: #0f0; margin: 10px; opacity: 0; text-shadow: 0 0 10px #0f0; transition: opacity 0.5s; }
@@ -96,3 +145,13 @@ button:disabled { border-color: #555; color: #555; background: #111; cursor: not
 #nav-down:active { transform: translateX(-50%) scale(0.95); }
 
 #restart-btn { display: none; position: absolute; top: 60%; left: 50%; transform: translate(-50%, -50%); background: #f00; color: #fff; border: 2px solid #fff; padding: 15px 30px; font-size: 24px; z-index: 100; }
+
+/* Add a transition to the canvas filter */
+canvas {
+    transition: filter 0.1s ease-out;
+}
+
+/* This class will be added briefly when turning */
+.turning {
+    filter: blur(4px) brightness(1.2);
+}

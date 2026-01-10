@@ -16,7 +16,6 @@ export class Renderer {
     triggerDamageFlash() { this.damageFlashTimer = 1.0; }
 
     clear() {
-        // Draw World Background
         this.ctx.fillStyle = "#222"; this.ctx.fillRect(0, 0, this.width, this.height / 2);
         this.ctx.fillStyle = "#000"; this.ctx.fillRect(0, this.height / 2, this.width, this.height / 2);
         this.ctx.strokeStyle = '#444'; this.ctx.lineWidth = 1;
@@ -25,25 +24,41 @@ export class Renderer {
     }
 
     drawCastle(progress, isActiveDirection) {
-        if (!isActiveDirection || progress === 0) return;
-        const cx = this.width / 2; const cy = this.height / 2;
+        // FIX: Removed "progress === 0" check so you can see it immediately
+        if (!isActiveDirection) return;
+
+        const cx = this.width / 2;
+        const cy = this.height / 2;
+        
+        // Progress 0 = Foundation (Small Box)
         const size = 10 + (progress * 15); 
+        
         this.ctx.save();
-        this.ctx.fillStyle = "#111"; this.ctx.strokeStyle = "#333";
+        this.ctx.fillStyle = "#111"; 
+        this.ctx.strokeStyle = "#333";
+        
         this.ctx.beginPath();
-        if (progress < 3) {
+        if (progress < 1) {
+            // Foundation (Wave 1)
+            this.ctx.fillRect(cx - 10, cy - 10, 20, 10);
+        } else if (progress < 3) {
+            // House
             this.ctx.fillRect(cx - size/2, cy - size, size, size);
-            this.ctx.moveTo(cx - size/2, cy - size); this.ctx.lineTo(cx, cy - size - (size/2)); this.ctx.lineTo(cx + size/2, cy - size);
+            this.ctx.moveTo(cx - size/2, cy - size);
+            this.ctx.lineTo(cx, cy - size - (size/2));
+            this.ctx.lineTo(cx + size/2, cy - size);
         } else {
+            // Castle
             this.ctx.fillRect(cx - size, cy - size/2, size*2, size/2); 
             this.ctx.fillRect(cx - size, cy - size, size/3, size); 
             this.ctx.fillRect(cx + size*0.66, cy - size, size/3, size); 
         }
-        this.ctx.stroke(); this.ctx.fill();
+        this.ctx.stroke();
+        this.ctx.fill();
         this.ctx.restore();
     }
 
-    // STEP 1: Draw the Black Overlay (The Darkness)
+    // STEP 1: Draw the Black Overlay (Hides Enemies)
     drawDarkness(aimX, aimY, scopeSize, recoilY) {
         const radius = (this.height * 0.17) * scopeSize;
         const rx = aimX; const ry = aimY - recoilY; 
@@ -57,7 +72,6 @@ export class Renderer {
         this.ctx.fillStyle = "#000"; 
         this.ctx.fillRect(0, 0, this.width, this.height);
 
-        // Damage Flash (Red tint in darkness)
         if (this.damageFlashTimer > 0) {
             this.ctx.fillStyle = `rgba(255, 0, 0, ${this.damageFlashTimer * 0.3})`;
             this.ctx.fillRect(0, 0, this.width, this.height);
@@ -66,33 +80,58 @@ export class Renderer {
         this.ctx.restore();
     }
 
-    // STEP 2: Draw Yellow Guides (Sandwiched between Darkness and UI)
+    // STEP 2: Draw Yellow Guides (On top of darkness)
     drawEnemyGuides(enemies, currentDirIndex, directions, aim, scopeSize) {
-        const radius = (this.height * 0.17) * scopeSize;
+        const scopeRadius = (this.height * 0.17) * scopeSize;
         
         this.ctx.save();
         
         // CLIP: Protect the scope circle so lines don't draw inside
         this.ctx.beginPath();
         this.ctx.rect(0, 0, this.width, this.height); 
-        this.ctx.arc(aim.x, aim.y, radius, 0, Math.PI*2, true); 
+        this.ctx.arc(aim.x, aim.y, scopeRadius, 0, Math.PI*2, true); 
         this.ctx.clip();
 
         // NEON GLOW
-        this.ctx.shadowBlur = 15; 
-        this.ctx.shadowColor = "#ffff00"; // Bright Yellow Glow
+        this.ctx.shadowBlur = 10; 
+        this.ctx.shadowColor = "#ffff00"; 
 
         enemies.forEach(e => {
-            // Only draw for enemies in current view direction
+            // Only draw for enemies in current view
             if (e.view === directions[currentDirIndex] && e.distance > 0) {
+                
+                // Calculate Position of Enemy Feet
                 let drawY = e.y + ((100 - e.distance) * (this.height/300));
                 
-                this.ctx.strokeStyle = "rgba(255, 255, 0, 0.6)"; // Visible Yellow
-                this.ctx.lineWidth = 3;
-                this.ctx.beginPath();
-                this.ctx.moveTo(this.width / 2, this.height); // Bottom Center
-                this.ctx.lineTo(e.x, drawY + 20); // Enemy Feet
-                this.ctx.stroke();
+                // Vector Math: Scope -> Enemy
+                let dx = e.x - aim.x;
+                let dy = drawY - aim.y;
+                let dist = Math.hypot(dx, dy);
+                
+                // Intensity Calculation (Like Red Indicators)
+                // Closer = Brighter & Longer. Farther = Dimmer & Shorter.
+                let intensity = 0;
+                if (e.distance < 80) intensity = 1 - (e.distance / 80);
+                if (intensity < 0) intensity = 0;
+
+                if (intensity > 0) {
+                    // Normalize Vector
+                    let nx = dx / dist;
+                    let ny = dy / dist;
+
+                    // Line Properties
+                    let lineLength = 30 + (50 * intensity); // Grows as they get close
+                    let startOffset = scopeRadius + 5; // Start just outside rim
+
+                    this.ctx.strokeStyle = `rgba(255, 255, 0, ${intensity})`; 
+                    this.ctx.lineWidth = 3;
+                    this.ctx.beginPath();
+                    // Start at Scope Edge
+                    this.ctx.moveTo(aim.x + (nx * startOffset), aim.y + (ny * startOffset)); 
+                    // Point outwards
+                    this.ctx.lineTo(aim.x + (nx * (startOffset + lineLength)), aim.y + (ny * (startOffset + lineLength))); 
+                    this.ctx.stroke();
+                }
             }
         });
         

@@ -1,4 +1,3 @@
-// Change the first line to import ENEMY_TYPES too
 import { Enemy, ENEMY_TYPES } from './enemies.js';
 import { InputHandler } from './input.js';
 import { Storage } from './storage.js';
@@ -20,7 +19,6 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const renderer = new Renderer(canvas, ctx);
 
-
 window.addEventListener('resize', () => { renderer.resize(window.innerWidth, window.innerHeight); });
 renderer.resize(window.innerWidth, window.innerHeight);
 
@@ -34,9 +32,9 @@ const WEAPONS = {
 const defaultStats = { 
     xp: 0, level: 1, highWave: 1, 
     unlockedWeapons: ['rifle'], 
-  stats: { damage: 1, scopeSize: 1.0, reloadSpeed: 1.0, lightLevel: 0, moveSpeed: 1 },// NEW TRACKING DATA
+    stats: { damage: 1, scopeSize: 1.0, reloadSpeed: 1.0, lightLevel: 0, moveSpeed: 1 },
     totalKills: 0,
-    bestiary: {} // Will look like { "basic": 50, "tank": 2 }
+    bestiary: {} 
 };
 
 let savedData = Storage.load();
@@ -49,7 +47,13 @@ let state = {
     enemiesSpawned: 0, enemiesToSpawn: 10, enemies: [], particles: [],
     dirIndex: 0, directions: ['N', 'E', 'S', 'W'], turrets: { 'N': false, 'E': false, 'S': false, 'W': false },
     turretTimer: 0, gameOver: false, currentWeapon: 'rifle', lastShotTime: 0, recoilY: 0, targetLocked: false,
-    castleDir: 'N', castleProgress: 0 
+    castleDir: 'N', castleProgress: 0,
+    // NEW STATES
+    bossWavePending: false, // True if we are about to fight the dragon
+    isBossWave: false,      // True if we are currently fighting the dragon
+    flareActive: false,
+    flareTimer: 0,
+    skillCooldown: 0
 };
 state.castleDir = 'N'; 
 
@@ -63,10 +67,40 @@ canvas.addEventListener('touchend', shoot);
 
 function updateGameUI() { renderer.updateUI(player, state, state.enemiesToSpawn); }
 
+// --- SKILL SYSTEM ---
+window.activateSkill = () => {
+    // 30 Seconds Cooldown (30000ms)
+    if (state.skillCooldown <= 0 && state.gameStarted && !state.shopOpen) {
+        AudioMgr.playSelect(); // Placeholder sound
+        state.flareActive = true;
+        state.flareTimer = 5000; // Lasts 5 seconds
+        state.skillCooldown = 30000;
+        spawnFloatingText("FLARE DEPLOYED", renderer.width/2, renderer.height/2, "yellow");
+    }
+};
+
 window.startStoryMode = () => { AudioMgr.playSelect(); document.getElementById('start-screen').style.display = 'none'; state.gameStarted = true; showHaiku(0); };
 window.dismissStory = () => { AudioMgr.playSelect(); document.getElementById('story-overlay').style.display = 'none'; state.storyOpen = false; state.waveActive = true; };
 window.skipStoryTypewriter = () => { document.querySelectorAll('.haiku-line').forEach(el => el.style.opacity = 1); document.getElementById('story-continue-btn').style.display = 'block'; };
-function showHaiku(waveIndex) { state.storyOpen = true; state.waveActive = false; const overlay = document.getElementById('story-overlay'); const lines = HAIKUS[Math.min(waveIndex, HAIKUS.length - 1)]; document.getElementById('line1').innerText = lines[0]; document.getElementById('line2').innerText = lines[1]; document.getElementById('line3').innerText = lines[2]; document.getElementById('story-continue-btn').style.display = 'none'; document.querySelectorAll('.haiku-line').forEach((el, i) => { el.style.opacity = 0; setTimeout(() => el.style.opacity = 1, 500 + (i * 1000)); }); setTimeout(() => { if(state.storyOpen) document.getElementById('story-continue-btn').style.display = 'block'; }, 3500); overlay.style.display = 'flex'; }
+function showHaiku(waveIndex) { 
+    state.storyOpen = true; state.waveActive = false; 
+    const overlay = document.getElementById('story-overlay'); 
+    // If Boss wave, show special text
+    if (state.isBossWave) {
+        document.getElementById('line1').innerText = "The Castle is here"; 
+        document.getElementById('line2').innerText = "The Dragon Guards the Gate"; 
+        document.getElementById('line3').innerText = "Take the Shot";
+    } else {
+        const lines = HAIKUS[Math.min(waveIndex, HAIKUS.length - 1)]; 
+        document.getElementById('line1').innerText = lines[0]; document.getElementById('line2').innerText = lines[1]; document.getElementById('line3').innerText = lines[2]; 
+    }
+    
+    document.getElementById('story-continue-btn').style.display = 'none'; 
+    document.querySelectorAll('.haiku-line').forEach((el, i) => { el.style.opacity = 0; setTimeout(() => el.style.opacity = 1, 500 + (i * 1000)); }); 
+    setTimeout(() => { if(state.storyOpen) document.getElementById('story-continue-btn').style.display = 'block'; }, 3500); 
+    overlay.style.display = 'flex'; 
+}
+
 window.switchTab = (tabName) => { AudioMgr.playSelect(); document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active')); document.getElementById(`tab-${tabName}`).classList.add('active'); document.getElementById(`btn-tab-${tabName}`).classList.add('active'); };
 window.toggleAccordion = (id) => { AudioMgr.playSelect(); const el = document.getElementById(id); if (el.classList.contains('show')) { el.classList.remove('show'); } else { document.querySelectorAll('.accordion-content').forEach(e => e.classList.remove('show')); el.classList.add('show'); } };
 window.buyRepair = () => { if (state.gold >= 50 && state.towerHp < 100) { AudioMgr.playSelect(); state.gold -= 50; state.towerHp = Math.min(100, state.towerHp + 20); updateGameUI(); } };
@@ -74,7 +108,7 @@ window.toggleWeaponMenu = () => { AudioMgr.playSelect(); const list = document.g
 window.openProfile = () => {
     AudioMgr.playSelect();
     document.getElementById('profile-overlay').style.display = 'flex';
-    window.switchProfileTab('stats'); // Default to stats
+    window.switchProfileTab('stats'); 
 };
 
 window.closeProfile = () => {
@@ -107,7 +141,7 @@ function updateStatsTab() {
     document.getElementById('p-stat-dmg').innerText = player.stats.damage;
     document.getElementById('p-stat-reload').innerText = player.stats.reloadSpeed.toFixed(1) + "x";
     document.getElementById('p-stat-scope').innerText = player.stats.scopeSize.toFixed(1) + "x";
-    // Simple Rank Logic
+    
     let rank = "Rookie";
     let move = player.stats.moveSpeed || 1;
     let k = player.totalKills || 0;
@@ -121,20 +155,13 @@ function updateStatsTab() {
 function updateBestiaryTab() {
     if (!player.bestiary) player.bestiary = {};
     const grid = document.getElementById('bestiary-grid');
-    grid.innerHTML = ""; // Clear
-    
-    // Loop through our data definitions
+    grid.innerHTML = ""; 
     for (let type in BESTIARY_DATA) {
         let kills = player.bestiary[type] || 0;
         let info = BESTIARY_DATA[type];
         
         let div = document.createElement('div');
         div.className = "beast-icon";
-        
-        // UNLOCK LOGIC
-        // 0 Kills = Locked (?)
-        // 1+ Kill = Icon Visible
-        // 10+ Kills = Info Unlocked
         
         if (kills > 0) {
             div.innerText = info.icon;
@@ -183,18 +210,13 @@ window.selectWeapon = (id) => {
         AudioMgr.playSelect();
         state.currentWeapon = id;
         document.getElementById('weapon-list').classList.remove('open');
-        
         let icon = "🔫";
         if (id === 'shotgun') icon = "💥";
         if (id === 'sniper') icon = "🔭";
-        
-        // --- FIX IS HERE ---
-        // OLD: document.getElementById('weapon-toggle').innerText = icon; 
-        // NEW: Target the span specifically so we don't delete the cooldown bar
         document.getElementById('weapon-icon').innerText = icon; 
     }
 };
-// BUG FIX: Wrapped buyWeapon in try/catch to avoid freezing loop
+
 window.buyWeapon = (id) => { 
     try {
         let cost = (id === 'shotgun') ? 200 : 500; 
@@ -212,44 +234,77 @@ window.buyUpgrade = (type) => {
     const costs = { damage: 100, rof: 150, scope: 120, light: 200 };
     
     if (player.xp >= costs[type]) {
-        // Validation: Limit scope and light so they don't break the game
         if (type === 'scope' && player.stats.scopeSize >= 2.0) return; 
         if (type === 'light' && player.stats.lightLevel >= 3) return;
-        if (type === 'speed' && player.stats.moveSpeed >= 2) return; // Cap at 2?
+        if (type === 'speed' && player.stats.moveSpeed >= 2) return; 
 
         AudioMgr.playSelect(); 
         player.xp -= costs[type]; 
         
         if (type === 'damage') player.stats.damage++;
-        if (type === 'rof') player.stats.reloadSpeed += 0.1; // 10% faster each time
-        if (type === 'scope') player.stats.scopeSize += 0.1; // 10% bigger scope
-        if (type === 'light') player.stats.lightLevel++;     // 1 extra ring of light
+        if (type === 'rof') player.stats.reloadSpeed += 0.1; 
+        if (type === 'scope') player.stats.scopeSize += 0.1; 
+        if (type === 'light') player.stats.lightLevel++;     
         if (type === 'speed') player.stats.moveSpeed++;
 
-        // Update Button Text to show "MAX" if needed
         const btn = document.getElementById(`btn-${type}`);
-        if(btn) btn.innerText = `${costs[type]} XP`; // You can add logic here to show "MAX"
+        if(btn) btn.innerText = `${costs[type]} XP`; 
         
         saveGame(); 
         updateGameUI();
     } 
 };
 window.buyTurret = (dir) => { if (!state.turrets[dir] && state.gold >= COST_TURRET) { AudioMgr.playSelect(); state.gold -= COST_TURRET; state.turrets[dir] = true; updateNavLabels(); updateShopButtons(); } };
-window.nextWave = () => { AudioMgr.playSelect(); document.getElementById('shop-overlay').style.display = 'none'; state.shopOpen = false; startNextWave(); };
-function startNextWave() { state.wave++; state.enemiesSpawned = 0; state.enemiesToSpawn = 10 + (state.wave * 2); state.enemies = []; showHaiku(state.wave - 1); saveGame(); }
+
+window.nextWave = () => { 
+    AudioMgr.playSelect(); 
+    document.getElementById('shop-overlay').style.display = 'none'; 
+    state.shopOpen = false; 
+    
+    // Check if we triggered the boss
+    if (state.bossWavePending) {
+        startBossWave();
+    } else {
+        startNextWave(); 
+    }
+};
+
+function startBossWave() {
+    state.isBossWave = true;
+    state.enemies = [];
+    state.enemiesSpawned = 0;
+    state.enemiesToSpawn = 1; // Just the boss
+    showHaiku(5); // Show the final haiku
+    
+    // Spawn the Dragon manually
+    const boss = new Enemy(renderer.width, renderer.height, 10);
+    boss.id = 'dragon';
+    boss.symbol = '🐉';
+    boss.hp = 100; // Force HP to be high
+    boss.maxHp = 100;
+    boss.isBoss = true;
+    boss.speed = 0.03; // Slow
+    boss.view = state.castleDir; // Always comes from the castle
+    state.enemies.push(boss);
+}
+
+function startNextWave() { 
+    state.wave++; 
+    state.enemiesSpawned = 0; 
+    state.enemiesToSpawn = 10 + (state.wave * 2); 
+    state.enemies = []; 
+    showHaiku(state.wave - 1); 
+    saveGame(); 
+}
+
 function turn(dirChange) {
     state.dirIndex = (state.dirIndex + dirChange + 4) % 4;
-    
-    // --- ADD THIS TRANSITION LOGIC ---
     canvas.classList.add('turning');
-    setTimeout(() => {
-        canvas.classList.remove('turning');
-    }, 100);
-    // ---------------------------------
-
+    setTimeout(() => { canvas.classList.remove('turning'); }, 100);
     updateNavLabels();
     if (state.shopOpen) updateShopButtons();
 }
+
 function shoot() {
     if (!state.gameStarted || state.storyOpen || state.gameOver || !state.waveActive || state.shopOpen) return;
     let now = Date.now();
@@ -277,35 +332,47 @@ function checkHit(x, y, dmg, isPlayer, radiusMult = 1.0) {
         let scale = (100 - e.distance) / 10;
         let drawY = e.y + ((100 - e.distance) * (canvas.height/300));
         let size = (8 * scale) * radiusMult; 
+        
+        // Easier to hit Dragon
+        if (e.id === 'dragon') size *= 3; 
+
         let hit = false;
         if (isPlayer) { let dist = Math.hypot(e.x - x, drawY - y); if (dist < size) hit = true; } else { hit = true; } 
         if (hit) {
             e.hp -= dmg; 
             AudioMgr.playThud(); 
-    if (e.hp <= 0) {
-    spawnExplosion(e.x, drawY, e.color);
-    state.enemies.splice(i, 1);
-    
-    // Stats Update
-    player.totalKills = (player.totalKills || 0) + 1;
-    player.xp += e.xpValue;
-    state.gold += 10;
-    
-    spawnFloatingText(`+${e.xpValue}XP`, e.x, drawY - 20, "#0ff");
+            if (e.hp <= 0) {
+                spawnExplosion(e.x, drawY, e.color);
+                state.enemies.splice(i, 1);
+                
+                // BOSS VICTORY
+                if (e.id === 'dragon') {
+                    triggerVictory();
+                    return;
+                }
 
-    // --- FIX IS HERE ---
-    // Use the ID we added to enemies.js
-    let enemyId = e.id || 'imp'; 
-    player.bestiary[enemyId] = (player.bestiary[enemyId] || 0) + 1;
-    // -------------------
-
-    saveGame();
-}
+                // Stats Update
+                player.totalKills = (player.totalKills || 0) + 1;
+                player.xp += e.xpValue;
+                state.gold += 10;
+                
+                spawnFloatingText(`+${e.xpValue}XP`, e.x, drawY - 20, "#0ff");
+                let enemyId = e.id || 'imp'; 
+                player.bestiary[enemyId] = (player.bestiary[enemyId] || 0) + 1;
+                saveGame();
+            }
             hitCount++;
             if (!piercing) break; 
             if (piercing && hitCount >= 3) break; 
         }
     }
+}
+
+function triggerVictory() {
+    state.waveActive = false;
+    state.gameOver = true; // Technically game over, but good
+    document.getElementById('victory-score').innerText = player.xp;
+    document.getElementById('victory-screen').style.display = 'flex';
 }
 
 function checkTargetLock(aimX, aimY, scopeRadius) {
@@ -341,34 +408,35 @@ function fireTurrets() {
 
 function spawnFloatingText(text, x, y, color) { state.particles.push({ type: 0, text, x, y, life: 1.0, color, vy: -1, vx: 0 }); }
 function spawnExplosion(x, y, color) { for(let k=0; k<15; k++) { state.particles.push({ type: 1, x, y, life: 1.0, color, vx: (Math.random() - 0.5) * 10, vy: (Math.random() - 0.5) * 10 }); }}
+
 function openShop() {
   state.shopOpen = true;
-
   document.getElementById("shop-overlay").style.display = "flex";
 
   const btn = document.getElementById("btn-damage");
-  if (btn) {
-    btn.innerText = `${COST_DAMAGE} XP`;
-  }
+  if (btn) btn.innerText = `${COST_DAMAGE} XP`;
 
+  // PROGRESS LOGIC
   const currentDir = state.directions[state.dirIndex];
-  if (currentDir === state.castleDir) {
+  if (currentDir === state.castleDir && !state.bossWavePending && !state.isBossWave) {
       let speed = player.stats.moveSpeed || 1;
-        state.castleProgress += speed;
-if (state.castleProgress > 4) state.castleProgress = 4;
+      state.castleProgress += speed;
       
-    spawnFloatingText(
-      "PROGRESS!",
-      renderer.width / 2,
-      renderer.height / 2,
-      "yellow"
-    );
+      if (state.castleProgress >= 4) {
+          state.castleProgress = 4;
+          state.bossWavePending = true; // TRIGGER THE END
+          document.getElementById('shop-title').innerText = "FINAL PREPARATION";
+          spawnFloatingText("CASTLE FOUND", renderer.width / 2, renderer.height / 2, "red");
+      } else {
+          spawnFloatingText("PROGRESS!", renderer.width / 2, renderer.height / 2, "yellow");
+      }
   }
 
   updateShopButtons();
   updateWeaponUI();
   window.switchTab("weapons");
 }
+
 function updateWeaponUI() { if (!player.unlockedWeapons) return; player.unlockedWeapons.forEach(id => { const el = document.getElementById(`slot-${id}`); if(el) el.classList.remove('locked'); }); if(player.unlockedWeapons.includes('shotgun')) document.getElementById('shop-shotgun').style.display = 'none'; if(player.unlockedWeapons.includes('sniper')) document.getElementById('shop-sniper').style.display = 'none'; }
 function updateShopButtons() { ['N','E','S','W'].forEach(dir => { const btn = document.getElementById(`btn-turret-${dir}`); if(btn) { if (state.turrets[dir]) { btn.innerText = "OWNED"; btn.className = "turret-btn owned"; } else { btn.innerText = dir; btn.className = "turret-btn"; } } }); }
 function updateNavLabels() { let cur = state.directions[state.dirIndex]; const getIcon = (dir) => state.turrets[dir] ? "🤖" : ""; document.getElementById('current-dir').innerHTML = cur + (state.turrets[cur] ? " <span style='font-size:20px'>🤖</span>" : ""); const leftIndex = (state.dirIndex + 3) % 4; const rightIndex = (state.dirIndex + 1) % 4; const backIndex = (state.dirIndex + 2) % 4; document.getElementById('nav-left').innerText = state.directions[leftIndex] + getIcon(state.directions[leftIndex]); document.getElementById('nav-right').innerText = state.directions[rightIndex] + getIcon(state.directions[rightIndex]); document.getElementById('nav-down').innerText = state.directions[backIndex] + getIcon(state.directions[backIndex]); }
@@ -377,7 +445,7 @@ function triggerDamageFeedback(enemyDir) { renderer.triggerDamageFlash(); let di
 
 // --- MAIN LOOP ---
 let lastTime = 0;
-let spawnTimer = 1500; // Start fast
+let spawnTimer = 1500; 
 let spawnRate = 2000;
 
 function gameLoop(timestamp) {
@@ -385,14 +453,24 @@ function gameLoop(timestamp) {
     lastTime = timestamp;
 
     renderer.clear();
-    
-    // Draw Environment (New!)
     const currentDir = state.directions[state.dirIndex];
     renderer.drawEnvironment(currentDir, state.castleProgress, state.castleDir);
 
     const isPaused = state.shopOpen || state.storyOpen || !state.gameStarted;
     const actions = input.update();
     
+    // UPDATE TIMERS
+    if (state.flareActive) {
+        state.flareTimer -= dt;
+        if (state.flareTimer <= 0) state.flareActive = false;
+    }
+    if (state.skillCooldown > 0) {
+        state.skillCooldown -= dt;
+        if (state.skillCooldown < 0) state.skillCooldown = 0;
+        let pct = state.skillCooldown / 30000;
+        document.getElementById('skill-cooldown').style.height = (pct * 100) + "%";
+    }
+
     if (!isPaused) {
         if (actions.turn !== 0) turn(actions.turn);
         if (actions.fire) shoot();
@@ -401,27 +479,26 @@ function gameLoop(timestamp) {
             if (state.enemiesSpawned < state.enemiesToSpawn) {
                 spawnTimer += dt;
                 if (spawnTimer > spawnRate) {
-                    state.enemies.push(new Enemy(renderer.width, renderer.height, state.wave));
-                    state.enemiesSpawned++;
-                    spawnTimer = 0;
-                    spawnRate = Math.max(500, 2000 - (state.wave * 100)); 
+                    if (!state.isBossWave) {
+                        state.enemies.push(new Enemy(renderer.width, renderer.height, state.wave));
+                        state.enemiesSpawned++;
+                        spawnTimer = 0;
+                        spawnRate = Math.max(500, 2000 - (state.wave * 100)); 
+                    }
                 }
             } else if (state.enemies.length === 0) { state.waveActive = false; openShop(); }
             state.turretTimer += dt;
             if (state.turretTimer > 2000) { fireTurrets(); state.turretTimer = 0; }
         }
 
-        // MEDIC LOGIC: Heal nearby enemies every 1s
         state.enemies.forEach(e => {
             if (e.isMedic) {
                 e.healTimer += dt;
                 if (e.healTimer > 1000) {
                     e.healTimer = 0;
-                    // Heal neighbors
                     state.enemies.forEach(other => {
                         if (e !== other && Math.abs(e.x - other.x) < 100 && other.view === e.view) {
                             other.hp = Math.min(other.maxHp, other.hp + 1);
-                            // Visual Pulse
                             spawnFloatingText("❤️", other.x, 100, "pink");
                         }
                     });
@@ -446,15 +523,25 @@ function gameLoop(timestamp) {
                 triggerDamageFeedback(enemyDir); 
                 if (enemyDir !== currentDir) state.playerHp -= 10; 
                 state.enemies.splice(i, 1);
+                
+                // BOSS GAME OVER
+                if (e.id === 'dragon') {
+                    state.gameOver = true;
+                }
+
                 if (state.towerHp <= 0 || state.playerHp <= 0) state.gameOver = true;
             }
         }
     }
 
-    if (state.gameOver) { renderer.drawGameOver(state.towerHp <= 0); return; }
+    if (state.gameOver && !state.waveActive && document.getElementById('victory-screen').style.display === 'flex') {
+        // Just let victory screen show
+    } else if (state.gameOver) { 
+        renderer.drawGameOver(state.towerHp <= 0); 
+        return; 
+    }
 
     // RENDER ORDER
-    // 1. Draw Enemies (Behind Darkness)
     for (let i = state.enemies.length - 1; i >= 0; i--) {
         let e = state.enemies[i];
         if (e.view === state.directions[state.dirIndex]) { e.draw(ctx, renderer.width, renderer.height); }
@@ -462,20 +549,14 @@ function gameLoop(timestamp) {
 
     const aim = input.getAim();
     const weaponScale = WEAPONS[state.currentWeapon].scopeScale || 1.0;
-    const scopeRadius =
-    (renderer.height * 0.17) *
-    player.stats.scopeSize *
-    weaponScale;
+    const scopeRadius = (renderer.height * 0.17) * player.stats.scopeSize * weaponScale;
     
     if (state.recoilY > 0) state.recoilY *= 0.8; 
 
-    // 2. Draw Darkness (Hides enemies outside scope)
-    renderer.drawDarkness(aim.x, aim.y, scopeRadius, state.recoilY, player.stats.lightLevel);
+    // PASS FLARE STATE TO RENDERER
+    renderer.drawDarkness(aim.x, aim.y, scopeRadius, state.recoilY, player.stats.lightLevel, state.flareActive);
 
-    // 3. Draw Yellow Guides
-    renderer.drawEnemyGuides(state.enemies, state.dirIndex, state.directions, aim, scopeRadius);
-
-    // 4. Draw Scope UI
+    renderer.drawEnemyGuides(state.enemies, state.dirIndex, state.directions, aim, scopeRadius, state.flareActive);
     checkTargetLock(aim.x, aim.y, renderer.height * 0.17 * scopeRadius); 
     renderer.drawScopeUI(aim.x, aim.y, scopeRadius, state.recoilY, state.targetLocked);
 

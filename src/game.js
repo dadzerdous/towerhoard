@@ -34,8 +34,7 @@ const WEAPONS = {
 const defaultStats = { 
     xp: 0, level: 1, highWave: 1, 
     unlockedWeapons: ['rifle'], 
-    stats: { damage: 1, scopeSize: 1.0, reloadSpeed: 1.0, lightLevel: 0 },
-    // NEW TRACKING DATA
+  stats: { damage: 1, scopeSize: 1.0, reloadSpeed: 1.0, lightLevel: 0, moveSpeed: 1 },// NEW TRACKING DATA
     totalKills: 0,
     bestiary: {} // Will look like { "basic": 50, "tank": 2 }
 };
@@ -100,13 +99,18 @@ window.switchProfileTab = (tab) => {
 function updateStatsTab() {
     document.getElementById('p-highwave').innerText = player.highWave;
     document.getElementById('p-totalkills').innerText = player.totalKills || 0;
+    document.getElementById('p-stat-dmg').innerText = player.stats.damage;
+    document.getElementById('p-stat-reload').innerText = player.stats.reloadSpeed.toFixed(1) + "x";
+    document.getElementById('p-stat-scope').innerText = player.stats.scopeSize.toFixed(1) + "x";
     // Simple Rank Logic
     let rank = "Rookie";
+    let move = player.stats.moveSpeed || 1;
     let k = player.totalKills || 0;
     if (k > 50) rank = "Survivor";
     if (k > 200) rank = "Veteran";
     if (k > 1000) rank = "Sniper Elite";
     document.getElementById('p-rank').innerText = rank;
+    document.getElementById('p-stat-move').innerText = move + " squares";
 }
 
 function updateBestiaryTab() {

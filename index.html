@@ -3,23 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sniper Defense .7</title>
+    <title>Sniper Defense</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <div id="start-screen">
         <h1>SNIPER DEFENSE</h1>
-        <p>Defend the Tower. Survive the Night.</p>
-        <button class="menu-btn" onclick="window.startStoryMode()">STORY MODE</button>
-        <button class="menu-btn disabled">MULTIPLAYER (Soon)</button>
+        <p>Defend the Tower. Find the Castle.</p>
+        <button class="menu-btn" onclick="window.startStoryMode()">START MISSION</button>
+        <button class="menu-btn disabled">MULTIPLAYER (OFFLINE)</button>
     </div>
 
-    <div id="story-overlay" onclick="window.dismissStory()">
+    <div id="story-overlay" onclick="window.skipStoryTypewriter()">
         <div id="line1" class="haiku-line"></div>
         <div id="line2" class="haiku-line"></div>
         <div id="line3" class="haiku-line"></div>
-        <div style="margin-top:50px; font-size:14px; color:#555; animation: fadeIn 4s forwards;">(Tap to Continue)</div>
+        <button id="story-continue-btn" onclick="window.dismissStory()">DEPLOY</button>
     </div>
 
     <div id="ui-layer">
@@ -42,31 +42,55 @@
 
     <div id="shop-overlay">
         <h2>WAVE COMPLETE</h2>
-        <div class="shop-section">
-            <h3>ARSENAL (XP)</h3>
+        
+        <div class="shop-tabs">
+            <div class="tab-btn active" onclick="window.switchTab('weapons')">WEAPONS</div>
+            <div class="tab-btn" onclick="window.switchTab('stats')">STATS</div>
+            <div class="tab-btn" onclick="window.switchTab('tower')">TOWER</div>
+        </div>
+
+        <div id="tab-weapons" class="tab-content active">
             <div class="shop-item" id="shop-shotgun">
                 <span>Unlock Shotgun (AOE)</span>
                 <button onclick="window.buyWeapon('shotgun')">200 XP</button>
             </div>
             <div class="shop-item" id="shop-sniper">
-                <span>Unlock .50 Cal (1 Shot)</span>
+                <span>Unlock .50 Cal (Pierce)</span>
                 <button onclick="window.buyWeapon('sniper')">500 XP</button>
             </div>
+            <div style="text-align:center; color:#555; margin-top:20px;">More weapons coming soon...</div>
         </div>
-        <div class="shop-section">
-            <h3>UPGRADES (XP)</h3>
-            <div class="shop-item" onclick="window.buyUpgrade('damage')">
+
+        <div id="tab-stats" class="tab-content">
+            <div class="shop-item">
                 <span>Base Damage (+1)</span>
-                <button id="btn-damage">100 XP</button>
+                <button onclick="window.buyUpgrade('damage')">100 XP</button>
+            </div>
+            <div class="shop-item">
+                <span>Scope Stability</span>
+                <button class="disabled">LOCKED</button> </div>
+        </div>
+
+        <div id="tab-tower" class="tab-content">
+            <div style="margin-bottom:10px; text-align:center; color:#aaa;">Buy Auto-Turrets (100G)</div>
+            <div class="shop-item">
+                <span>NORTH Turret</span>
+                <button id="btn-turret-N" onclick="window.buyTurret('N')">BUY</button>
+            </div>
+            <div class="shop-item">
+                <span>EAST Turret</span>
+                <button id="btn-turret-E" onclick="window.buyTurret('E')">BUY</button>
+            </div>
+            <div class="shop-item">
+                <span>SOUTH Turret</span>
+                <button id="btn-turret-S" onclick="window.buyTurret('S')">BUY</button>
+            </div>
+            <div class="shop-item">
+                <span>WEST Turret</span>
+                <button id="btn-turret-W" onclick="window.buyTurret('W')">BUY</button>
             </div>
         </div>
-        <div class="shop-section">
-            <h3>TOWER DEFENSE (GOLD)</h3>
-            <div class="shop-item" onclick="window.buyTurret()">
-                <span>Auto-Turret (Current View)</span>
-                <button id="btn-turret">100 G</button>
-            </div>
-        </div>
+
         <button id="next-wave-btn" onclick="window.nextWave()">START NEXT WAVE</button>
     </div>
 

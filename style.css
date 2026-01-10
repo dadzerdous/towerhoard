@@ -129,32 +129,38 @@ button:disabled { border-color: #555; color: #555; background: #111; cursor: not
     background: #0f0; color: #000;
 }
 
-/* COMPASS GRID FOR TURRETS */
-.turret-grid {
-    display: grid;
-    grid-template-columns: 60px 60px 60px;
-    grid-template-rows: 60px 60px 60px;
+/* ACCORDION MENU STYLES */
+.accordion-header {
+    width: 100%;
+    padding: 10px;
+    background: #003300;
+    border: 1px solid #0f0;
+    color: #0f0;
+    font-weight: bold;
+    cursor: pointer;
+    text-align: left;
+    margin-bottom: 5px;
+}
+.accordion-header:hover { background: #0f0; color: #000; }
+.accordion-content {
+    display: none; /* Hidden by default */
+    width: 100%;
+    background: #001100;
+    border: 1px solid #004400;
+    border-top: none;
+    padding: 10px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
     gap: 10px;
-    margin-top: 20px;
 }
-.turret-btn {
-    width: 60px; height: 60px;
-    background: #002200; border: 1px solid #0f0;
-    color: #0f0; font-weight: bold; cursor: pointer;
-    display: flex; justify-content: center; align-items: center;
-}
+.accordion-content.show { display: flex; } /* Show when toggled */
+
+.turret-grid { display: flex; gap: 10px; width: 100%; justify-content: space-around; }
+.turret-btn { width: 50px; height: 50px; background: #002200; border: 1px solid #0f0; color: #0f0; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; }
 .turret-btn:hover { background: #004400; }
 .turret-btn.owned { background: #0f0; color: #000; border-color: #0f0; }
-/* Grid Positions */
-#btn-turret-N { grid-column: 2; grid-row: 1; }
-#btn-turret-W { grid-column: 1; grid-row: 2; }
-#btn-turret-E { grid-column: 3; grid-row: 2; }
-#btn-turret-S { grid-column: 2; grid-row: 3; }
-/* Center Icon */
-.turret-center { grid-column: 2; grid-row: 2; display:flex; justify-content:center; align-items:center; font-size:20px; }
 
-
-/* WEAPON RACK (Bottom Right) */
+/* WEAPON RACK */
 #weapon-rack {
     position: absolute; bottom: 20px; right: 20px;
     display: flex; flex-direction: column-reverse; 
@@ -188,18 +194,21 @@ button:disabled { border-color: #555; color: #555; background: #111; cursor: not
 #danger-right { top: 20%; bottom: 20%; right: 0; width: 15px; }
 #danger-behind { bottom: 0; left: 20%; right: 20%; height: 15px; }
 
-/* NAV ZONES - TIGHTENED ACCURACY */
+/* NAV ZONES - BOXES */
 .nav-zone {
     position: absolute; display: flex; justify-content: center; align-items: center;
-    font-size: 30px; font-weight: bold; color: rgba(0, 255, 0, 0.4);
+    font-size: 24px; font-weight: bold; color: #0f0;
     cursor: pointer; z-index: 30; user-select: none; 
-    background: rgba(0,0,0,0.2); border-radius: 10px;
-    border: 1px solid rgba(0,255,0,0.2);
+    background: rgba(0, 20, 0, 0.8); /* Dark Green Box */
+    border: 2px solid #0f0;
+    box-shadow: 0 0 10px #000;
 }
-/* Smaller Hitboxes */
-#nav-left { top: 50%; left: 10px; width: 60px; height: 100px; transform: translateY(-50%); }
-#nav-right { top: 50%; right: 10px; width: 60px; height: 100px; transform: translateY(-50%); }
-#nav-down { bottom: 10px; left: 50%; width: 100px; height: 50px; transform: translateX(-50%); }
+.nav-zone:active { background: #0f0; color: #000; }
+
+/* Smaller Hitboxes, Specific Positions */
+#nav-left { top: 50%; left: 10px; width: 50px; height: 50px; transform: translateY(-50%); }
+#nav-right { top: 50%; right: 10px; width: 50px; height: 50px; transform: translateY(-50%); }
+#nav-down { bottom: 10px; left: 50%; width: 50px; height: 50px; transform: translateX(-50%); }
 
 #restart-btn {
     display: none; position: absolute; top: 60%; left: 50%;

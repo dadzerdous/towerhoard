@@ -24,23 +24,22 @@ export class Renderer {
     }
 
     drawCastle(progress, isActiveDirection) {
-        // FIX: Removed "progress === 0" check so you can see it immediately
         if (!isActiveDirection) return;
 
         const cx = this.width / 2;
         const cy = this.height / 2;
         
-        // Progress 0 = Foundation (Small Box)
-        const size = 10 + (progress * 15); 
+        // VISIBILITY FIX: Increased size and contrast
+        const size = 15 + (progress * 20); 
         
         this.ctx.save();
-        this.ctx.fillStyle = "#111"; 
-        this.ctx.strokeStyle = "#333";
+        this.ctx.fillStyle = "#000"; // Pure Black (Matches ground)
+        this.ctx.strokeStyle = "#222"; // Subtle outline
         
         this.ctx.beginPath();
         if (progress < 1) {
-            // Foundation (Wave 1)
-            this.ctx.fillRect(cx - 10, cy - 10, 20, 10);
+            // Foundation
+            this.ctx.fillRect(cx - 15, cy - 10, 30, 10);
         } else if (progress < 3) {
             // House
             this.ctx.fillRect(cx - size/2, cy - size, size, size);
@@ -58,7 +57,6 @@ export class Renderer {
         this.ctx.restore();
     }
 
-    // STEP 1: Draw the Black Overlay (Hides Enemies)
     drawDarkness(aimX, aimY, scopeSize, recoilY) {
         const radius = (this.height * 0.17) * scopeSize;
         const rx = aimX; const ry = aimY - recoilY; 
@@ -66,7 +64,7 @@ export class Renderer {
         this.ctx.save();
         this.ctx.beginPath(); 
         this.ctx.rect(0, 0, this.width, this.height); 
-        this.ctx.arc(rx, ry, radius, 0, Math.PI*2, true); // Cut hole
+        this.ctx.arc(rx, ry, radius, 0, Math.PI*2, true); 
         this.ctx.clip();
         
         this.ctx.fillStyle = "#000"; 
@@ -80,55 +78,50 @@ export class Renderer {
         this.ctx.restore();
     }
 
-    // STEP 2: Draw Yellow Guides (On top of darkness)
     drawEnemyGuides(enemies, currentDirIndex, directions, aim, scopeSize) {
         const scopeRadius = (this.height * 0.17) * scopeSize;
         
         this.ctx.save();
         
-        // CLIP: Protect the scope circle so lines don't draw inside
+        // CLIP: Still protect the inside
         this.ctx.beginPath();
         this.ctx.rect(0, 0, this.width, this.height); 
         this.ctx.arc(aim.x, aim.y, scopeRadius, 0, Math.PI*2, true); 
         this.ctx.clip();
 
-        // NEON GLOW
         this.ctx.shadowBlur = 10; 
         this.ctx.shadowColor = "#ffff00"; 
 
         enemies.forEach(e => {
-            // Only draw for enemies in current view
             if (e.view === directions[currentDirIndex] && e.distance > 0) {
                 
-                // Calculate Position of Enemy Feet
                 let drawY = e.y + ((100 - e.distance) * (this.height/300));
-                
-                // Vector Math: Scope -> Enemy
                 let dx = e.x - aim.x;
                 let dy = drawY - aim.y;
-                let dist = Math.hypot(dx, dy);
-                
-                // Intensity Calculation (Like Red Indicators)
-                // Closer = Brighter & Longer. Farther = Dimmer & Shorter.
+                let distToCenter = Math.hypot(dx, dy);
+
+                // LOGIC FIX: If enemy overlaps scope, DO NOT DRAW LINE
+                // We assume scope radius ~ 90% tolerance for visual overlap
+                if (distToCenter < scopeRadius * 1.2) return; 
+
+                // Intensity: Starts very dim at 100 distance, stronger at 50
                 let intensity = 0;
-                if (e.distance < 80) intensity = 1 - (e.distance / 80);
-                if (intensity < 0) intensity = 0;
+                if (e.distance < 100) intensity = 1 - (e.distance / 100);
+                // Curve it so it stays dim longer
+                intensity = Math.pow(intensity, 2); 
 
-                if (intensity > 0) {
-                    // Normalize Vector
-                    let nx = dx / dist;
-                    let ny = dy / dist;
+                if (intensity > 0.1) {
+                    let nx = dx / distToCenter;
+                    let ny = dy / distToCenter;
 
-                    // Line Properties
-                    let lineLength = 30 + (50 * intensity); // Grows as they get close
-                    let startOffset = scopeRadius + 5; // Start just outside rim
+                    // Line grows from scope outward
+                    let lineLength = 10 + (60 * intensity); 
+                    let startOffset = scopeRadius + 5; 
 
-                    this.ctx.strokeStyle = `rgba(255, 255, 0, ${intensity})`; 
-                    this.ctx.lineWidth = 3;
+                    this.ctx.strokeStyle = `rgba(255, 255, 0, ${intensity * 0.8})`; 
+                    this.ctx.lineWidth = 2 + (2 * intensity); // Thicker as it gets closer
                     this.ctx.beginPath();
-                    // Start at Scope Edge
                     this.ctx.moveTo(aim.x + (nx * startOffset), aim.y + (ny * startOffset)); 
-                    // Point outwards
                     this.ctx.lineTo(aim.x + (nx * (startOffset + lineLength)), aim.y + (ny * (startOffset + lineLength))); 
                     this.ctx.stroke();
                 }
@@ -138,7 +131,6 @@ export class Renderer {
         this.ctx.restore();
     }
 
-    // STEP 3: Draw Scope UI (Rims & Crosshair)
     drawScopeUI(aimX, aimY, scopeSize, recoilY, isLocked) {
         const radius = (this.height * 0.17) * scopeSize;
         const rx = aimX; const ry = aimY - recoilY; 
@@ -150,7 +142,7 @@ export class Renderer {
         this.ctx.arc(rx, ry, radius, 0, Math.PI*2); 
         this.ctx.stroke();
 
-        // Target Lock Halo (Yellow Rim)
+        // Target Lock Halo
         if (isLocked) {
             this.ctx.save();
             this.ctx.shadowBlur = 15;
@@ -170,7 +162,7 @@ export class Renderer {
         this.ctx.arc(rx, ry, radius - 5, 0, Math.PI*2); 
         this.ctx.stroke();
 
-        // Crosshair (Turns Yellow on Lock)
+        // Crosshair
         this.ctx.strokeStyle = isLocked ? "yellow" : "rgba(255, 0, 0, 0.9)";
         this.ctx.lineWidth = 1;
         this.ctx.beginPath();

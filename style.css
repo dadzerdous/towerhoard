@@ -56,7 +56,7 @@ body {
 .menu-btn:hover { background: #0f0; color: #000; }
 .menu-btn.disabled { border-color: #555; color: #555; cursor: not-allowed; background: #111; }
 
-/* STORY OVERLAY (The Haiku) */
+/* STORY OVERLAY */
 #story-overlay {
     display: none;
     position: absolute;
@@ -72,70 +72,23 @@ body {
     font-size: 24px;
     color: #0f0;
     margin: 10px;
-    opacity: 0; /* Fade in */
-    animation: fadeIn 1s forwards;
+    opacity: 0; /* JS handles fade now */
     text-shadow: 0 0 10px #0f0;
+    transition: opacity 0.5s;
 }
-.haiku-line:nth-child(2) { animation-delay: 1.5s; }
-.haiku-line:nth-child(3) { animation-delay: 3s; }
-
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-/* MOVED: Bottom Right Corner */
-#weapon-rack {
-    position: absolute;
-    bottom: 20px;
-    right: 20px;
-    display: flex;
-    flex-direction: column-reverse; /* Stack upwards from bottom */
-    align-items: flex-end;
-    gap: 10px;
-    z-index: 70; /* Above UI */
-}
-
-/* Toggle Button */
-#weapon-toggle {
-    width: 60px;
-    height: 60px;
-    background: rgba(0, 40, 0, 0.9);
-    border: 3px solid #0f0;
-    color: #0f0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    border-radius: 50%;
-    font-size: 24px;
+#story-continue-btn {
+    display: none; /* Hidden until text done */
+    margin-top: 40px;
+    padding: 15px 30px;
+    font-size: 20px;
+    background: #0f0;
+    color: #000;
+    border: none;
     cursor: pointer;
-    box-shadow: 0 0 15px #0f0;
-}
-
-#weapon-list {
-    display: none;
-    flex-direction: column-reverse; /* List grows upwards */
-    gap: 10px;
-    margin-bottom: 10px;
-}
-#weapon-list.open { display: flex; }
-
-.weapon-slot {
-    width: 120px;
-    height: 40px;
-    background: rgba(0, 20, 0, 0.9);
-    border: 1px solid #0f0;
-    color: #0f0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    font-size: 14px;
     font-weight: bold;
-    user-select: none;
-    border-radius: 5px;
 }
-.weapon-slot.active { background: #0f0; color: #000; }
-.weapon-slot.locked { border-color: #555; color: #555; background: #111; }
 
-/* Shop, Nav, etc... */
+/* TABBED SHOP MENU */
 #shop-overlay {
     display: none;
     position: absolute;
@@ -147,16 +100,131 @@ body {
     justify-content: center;
     color: #0f0;
 }
-.shop-section { border: 1px solid #0f0; padding: 10px; margin: 10px; width: 80%; max-width: 400px; background: #001100; }
-.shop-item { display: flex; justify-content: space-between; margin: 5px 0; align-items: center; }
-button { background: #003300; color: #0f0; border: 1px solid #0f0; padding: 5px 10px; cursor: pointer; font-family: inherit; }
-#nav-left, #nav-right, #nav-down { position: absolute; z-index: 30; font-size: 40px; font-weight: bold; color: rgba(0,255,0,0.3); display: flex; justify-content: center; align-items: center; user-select: none; cursor: pointer; }
-#nav-left { top: 50%; left: 0; width: 80px; height: 20%; transform: translateY(-50%); }
-#nav-right { top: 50%; right: 0; width: 80px; height: 20%; transform: translateY(-50%); }
-#nav-down { bottom: 0; left: 50%; width: 30%; height: 80px; transform: translateX(-50%); }
+
+/* Tabs Header */
+.shop-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.tab-btn {
+    padding: 10px 20px;
+    background: #002200;
+    border: 1px solid #0f0;
+    color: #888;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: bold;
+}
+.tab-btn.active {
+    background: #0f0;
+    color: #000;
+    border-color: #0f0;
+}
+
+/* Tab Content Areas */
+.tab-content {
+    display: none;
+    width: 80%;
+    max-width: 500px;
+    background: #001100;
+    border: 1px solid #0f0;
+    padding: 20px;
+    min-height: 200px;
+}
+.tab-content.active { display: block; }
+
+.shop-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #004400;
+    padding-bottom: 10px;
+}
+.shop-item:last-child { border-bottom: none; }
+
+button {
+    background: #003300;
+    color: #0f0;
+    border: 1px solid #0f0;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-family: inherit;
+}
+button:active { background: #0f0; color: #000; }
+button:disabled { border-color: #555; color: #555; background: #111; cursor: not-allowed; }
+
+#next-wave-btn {
+    margin-top: 20px;
+    padding: 15px 30px;
+    font-size: 20px;
+    font-weight: bold;
+    background: #0f0;
+    color: #000;
+}
+
+/* HUD & Navigation */
+#weapon-rack {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column-reverse; 
+    align-items: flex-end;
+    gap: 10px;
+    z-index: 70;
+}
+#weapon-toggle {
+    width: 60px; height: 60px;
+    background: rgba(0, 40, 0, 0.9);
+    border: 3px solid #0f0;
+    color: #0f0;
+    display: flex; justify-content: center; align-items: center;
+    border-radius: 50%;
+    font-size: 24px; cursor: pointer;
+    box-shadow: 0 0 15px #0f0;
+}
+#weapon-list {
+    display: none;
+    flex-direction: column-reverse;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+#weapon-list.open { display: flex; }
+.weapon-slot {
+    width: 120px; height: 40px;
+    background: rgba(0, 20, 0, 0.9);
+    border: 1px solid #0f0;
+    color: #0f0;
+    display: flex; justify-content: center; align-items: center;
+    cursor: pointer;
+    font-size: 14px; font-weight: bold;
+    user-select: none; border-radius: 5px;
+}
+.weapon-slot.active { background: #0f0; color: #000; }
+.weapon-slot.locked { border-color: #555; color: #555; background: #111; }
+
 #current-dir { position: absolute; top: 10px; width: 100%; text-align: center; font-size: 30px; font-weight: bold; pointer-events: none; z-index: 20; color: #0f0; }
 .danger-indicator { position: absolute; pointer-events: none; background: red; opacity: 0; z-index: 15; box-shadow: 0 0 30px red; transition: opacity 0.2s; }
 #danger-left { top: 20%; bottom: 20%; left: 0; width: 15px; }
 #danger-right { top: 20%; bottom: 20%; right: 0; width: 15px; }
 #danger-behind { bottom: 0; left: 20%; right: 20%; height: 15px; }
-#restart-btn { display: none; position: absolute; top: 60%; left: 50%; transform: translate(-50%, -50%); background: #f00; color: #fff; border: 2px solid #fff; padding: 15px 30px; font-size: 24px; z-index: 100; }
+
+/* Navigation Zones */
+.nav-zone {
+    position: absolute; display: flex; justify-content: center; align-items: center;
+    font-size: 40px; font-weight: bold; color: rgba(0, 255, 0, 0.3);
+    cursor: pointer; z-index: 30; user-select: none; background: transparent;
+    text-shadow: 0 0 10px #000;
+}
+#nav-left { top: 50%; left: 0; width: 80px; height: 20%; transform: translateY(-50%); }
+#nav-right { top: 50%; right: 0; width: 80px; height: 20%; transform: translateY(-50%); }
+#nav-down { bottom: 0; left: 50%; width: 30%; height: 80px; transform: translateX(-50%); }
+
+#restart-btn {
+    display: none; position: absolute; top: 60%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: #f00; color: #fff; border: 2px solid #fff;
+    padding: 15px 30px; font-size: 24px; z-index: 100;
+}

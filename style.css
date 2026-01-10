@@ -14,7 +14,6 @@ body {
     cursor: crosshair;
 }
 
-/* UI Layer */
 #ui-layer {
     position: absolute;
     top: 20px; left: 20px;
@@ -42,71 +41,93 @@ body {
 }
 #start-screen h1 { font-size: 40px; margin-bottom: 10px; text-shadow: 0 0 20px #0f0; }
 #start-screen p { font-size: 18px; color: #888; margin-bottom: 30px; }
-#start-btn {
-    padding: 20px 50px;
-    font-size: 24px;
+.menu-btn {
+    padding: 15px 40px;
+    font-size: 20px;
     font-weight: bold;
-    background: #0f0;
-    color: #000;
-    border: none;
+    background: #003300;
+    color: #0f0;
+    border: 2px solid #0f0;
     cursor: pointer;
-    box-shadow: 0 0 20px #0f0;
+    margin: 10px;
+    width: 250px;
+    text-align: center;
 }
+.menu-btn:hover { background: #0f0; color: #000; }
+.menu-btn.disabled { border-color: #555; color: #555; cursor: not-allowed; background: #111; }
 
-/* COLLAPSIBLE WEAPON RACK */
+/* STORY OVERLAY (The Haiku) */
+#story-overlay {
+    display: none;
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: #000;
+    z-index: 90;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+.haiku-line {
+    font-size: 24px;
+    color: #0f0;
+    margin: 10px;
+    opacity: 0; /* Fade in */
+    animation: fadeIn 1s forwards;
+    text-shadow: 0 0 10px #0f0;
+}
+.haiku-line:nth-child(2) { animation-delay: 1.5s; }
+.haiku-line:nth-child(3) { animation-delay: 3s; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* MOVED: Bottom Right Corner */
 #weapon-rack {
     position: absolute;
-    top: 50%;
-    right: 10px;
-    transform: translateY(-50%);
+    bottom: 20px;
+    right: 20px;
     display: flex;
-    flex-direction: column;
-    align-items: flex-end; /* Align to right */
-    gap: 5px;
-    z-index: 60;
+    flex-direction: column-reverse; /* Stack upwards from bottom */
+    align-items: flex-end;
+    gap: 10px;
+    z-index: 70; /* Above UI */
 }
 
-/* The Main Toggle Button (Shows current weapon) */
+/* Toggle Button */
 #weapon-toggle {
-    width: 70px;
-    height: 70px;
+    width: 60px;
+    height: 60px;
     background: rgba(0, 40, 0, 0.9);
     border: 3px solid #0f0;
     color: #0f0;
     display: flex;
-    flex-direction: column;
     justify-content: center;
     align-items: center;
-    cursor: pointer;
-    border-radius: 50%; /* Circle */
+    border-radius: 50%;
     font-size: 24px;
+    cursor: pointer;
     box-shadow: 0 0 15px #0f0;
-    user-select: none;
-    transition: transform 0.1s;
 }
-#weapon-toggle:active { transform: scale(0.9); }
 
-/* The List of Weapons (Hidden by default) */
 #weapon-list {
-    display: none; /* Hidden */
-    flex-direction: column;
+    display: none;
+    flex-direction: column-reverse; /* List grows upwards */
     gap: 10px;
-    margin-top: 10px;
+    margin-bottom: 10px;
 }
 #weapon-list.open { display: flex; }
 
 .weapon-slot {
-    width: 60px;
+    width: 120px;
     height: 40px;
-    background: rgba(0, 20, 0, 0.8);
+    background: rgba(0, 20, 0, 0.9);
     border: 1px solid #0f0;
     color: #0f0;
     display: flex;
-    flex-direction: column;
     justify-content: center;
     align-items: center;
     cursor: pointer;
-    font-size: 10px;
+    font-size: 14px;
     font-weight: bold;
     user-select: none;
     border-radius: 5px;
@@ -114,7 +135,7 @@ body {
 .weapon-slot.active { background: #0f0; color: #000; }
 .weapon-slot.locked { border-color: #555; color: #555; background: #111; }
 
-/* Shop, Nav, etc... (Keep existing) */
+/* Shop, Nav, etc... */
 #shop-overlay {
     display: none;
     position: absolute;
